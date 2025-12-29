@@ -64,14 +64,12 @@ export default function OrderingPage() {
       return total + order.items.reduce((sum, item) => sum + (item.price * (item.qty || 0)), 0);
   }, 0);
 
-  // แก้ไข: เปลี่ยนจากส่งเลย เป็นเปิด Modal ยืนยันก่อน
   const handlePlaceOrderClick = () => {
     if (cart.length > 0) {
       setIsConfirmingOrder(true);
     }
   };
 
-  // ฟังก์ชันยืนยันจริง (เรียกใช้ใน Modal)
   const handleConfirmOrder = async () => {
     await placeOrder();
     setIsConfirmingOrder(false);
@@ -91,7 +89,8 @@ export default function OrderingPage() {
       <div className="h-[calc(100vh-80px)] flex flex-col md:flex-row gap-4 p-2 md:p-4 animate-fade-in relative">
         
         {/* --- MENU --- */}
-        <div className="flex-1 overflow-y-auto pb-24 md:pb-0 pr-0 md:pr-2 scrollbar-thin scrollbar-thumb-white/50 scrollbar-track-transparent">
+        {/* แก้ไข: เพิ่ม Padding Bottom (pb-40) ให้เยอะขึ้น เพื่อไม่ให้ Bottom Sheet บัง */}
+        <div className="flex-1 overflow-y-auto pb-40 md:pb-0 pr-0 md:pr-2 scrollbar-thin scrollbar-thumb-white/50 scrollbar-track-transparent">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
             <div>
               <h2 className="text-3xl font-bold text-white drop-shadow-md">เมนูอาหาร</h2>
