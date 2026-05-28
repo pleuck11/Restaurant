@@ -1,13 +1,28 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { RestaurantProvider } from "@/context/RestaurantContext";
+import { NotificationProvider } from "@/context/NotificationContext";
+
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "อิ่มขนาด",
   description: "Reservation System",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "อิ่มขนาด",
+  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -27,11 +42,13 @@ export default function RootLayout({
         </div>
 
         {/* Global Context Provider */}
-        <RestaurantProvider>
-            <div className="relative z-10">
-               {children}
-            </div>
-        </RestaurantProvider>
+        <NotificationProvider>
+          <RestaurantProvider>
+              <div className="relative z-10">
+                 {children}
+              </div>
+          </RestaurantProvider>
+        </NotificationProvider>
       </body>
     </html>
   );

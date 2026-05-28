@@ -1,0 +1,20 @@
+<svg width="256" height="256" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF8A00" />
+      <stop offset="100%" stop-color="#E52E71" />
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="64" fill="url(#bg)" />
+  <g stroke="white" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <!-- Fork -->
+    <path d="M 70 80 v 40" />
+    <path d="M 110 80 v 40" />
+    <path d="M 70 120 h 40" />
+    <path d="M 90 80 v 100" />
+    
+    <!-- Knife -->
+    <path d="M 154 80 v 100" />
+    <path d="M 154 80 h 16 c 16 0, 16 48, 0 48 h -16" />
+  </g>
+</svg>

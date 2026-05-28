@@ -18,20 +18,86 @@ import {
   CheckCircle,
   Bell,
   ListChecks,
-  X
+  X,
+  Utensils,
+  Edit,
+  Trash2,
+  Plus,
+  Image
 } from 'lucide-react';
 import { GlassCard, GlassButton } from '../../../components/ui/Glass';
 import { useRestaurant, MenuItem } from '../../../context/RestaurantContext';
+import { useNotification } from '../../../context/NotificationContext';
 import Navbar from '../../../components/Navbar';
 
 export default function AdminDashboard() {
-  const { orders, reservations, isLoading, updateReservationStatus, confirmPayment } = useRestaurant();
+  const { orders, reservations, isLoading, updateReservationStatus, confirmPayment, menuItems, addMenuItem, updateMenuItem, deleteMenuItem } = useRestaurant();
+  const { showConfirm } = useNotification();
   const [filterTableDate, setFilterTableDate] = useState('today'); 
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState<'orders' | 'reservations' | 'bills'>('orders');
+  const [activeTab, setActiveTab] = useState<'orders' | 'reservations' | 'bills' | 'menu'>('orders');
   
   const [selectedBillTableId, setSelectedBillTableId] = useState<number | null>(null);
   const [isConfirmingPayment, setIsConfirmingPayment] = useState(false);
+
+  // --- Menu Management State ---
+  const [isMenuModalOpen, setIsMenuModalOpen] = useState(false);
+  const [editingMenuItem, setEditingMenuItem] = useState<MenuItem | null>(null);
+  const [menuForm, setMenuForm] = useState({ name: '', category: '', price: '', image: '' });
+  const [isSavingMenu, setIsSavingMenu] = useState(false);
+
+  const handleSaveMenu = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!menuForm.name || !menuForm.category || !menuForm.price || !menuForm.image) return;
+    setIsSavingMenu(true);
+    try {
+      if (editingMenuItem) {
+        await updateMenuItem(editingMenuItem.id, {
+          name: menuForm.name,
+          category: menuForm.category,
+          price: Number(menuForm.price),
+          image: menuForm.image
+        });
+      } else {
+        await addMenuItem({
+          name: menuForm.name,
+          category: menuForm.category,
+          price: Number(menuForm.price),
+          image: menuForm.image
+        });
+      }
+      setIsMenuModalOpen(false);
+      setEditingMenuItem(null);
+      setMenuForm({ name: '', category: '', price: '', image: '' });
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsSavingMenu(false);
+    }
+  };
+
+  const handleDeleteMenu = async (id: string | number) => {
+    showConfirm("คุณแน่ใจหรือไม่ที่จะลบเมนูนี้?", async () => {
+      await deleteMenuItem(id);
+    });
+  };
+
+  const openEditMenu = (item: MenuItem) => {
+    setEditingMenuItem(item);
+    setMenuForm({
+      name: item.name,
+      category: item.category,
+      price: String(item.price),
+      image: item.image
+    });
+    setIsMenuModalOpen(true);
+  };
+
+  const openAddMenu = () => {
+    setEditingMenuItem(null);
+    setMenuForm({ name: '', category: '', price: '', image: '' });
+    setIsMenuModalOpen(true);
+  };
 
   // --- 1. คำนวณยอดขาย ---
   const today = new Date();
@@ -76,17 +142,18 @@ export default function AdminDashboard() {
     const orderDate = order.timestamp instanceof Date ? order.timestamp : new Date(order.timestamp);
     if (isNaN(orderDate.getTime())) return false;
 
+    if (searchTerm) {
+        const searchLower = searchTerm.toLowerCase();
+        return (order.id || '').toLowerCase().includes(searchLower) || 
+               `โต๊ะ ${order.tableId}`.toLowerCase().includes(searchLower);
+    }
+
     const isToday = orderDate.getDate() === today.getDate() &&
                     orderDate.getMonth() === today.getMonth() &&
                     orderDate.getFullYear() === today.getFullYear();
     
     if (filterTableDate === 'today' && !isToday) return false;
     
-    if (searchTerm) {
-        const searchLower = searchTerm.toLowerCase();
-        return (order.id || '').toLowerCase().includes(searchLower) || 
-               `โต๊ะ ${order.tableId}`.toLowerCase().includes(searchLower);
-    }
     return true;
   });
 
@@ -94,6 +161,12 @@ export default function AdminDashboard() {
     if (!res || !res.date) return false;
     const resDate = new Date(res.date);
     
+    if (searchTerm) {
+        const searchLower = searchTerm.toLowerCase();
+        return (res.name || '').toLowerCase().includes(searchLower) || 
+               (res.phone || '').includes(searchLower);
+    }
+
     if (filterTableDate === 'today') {
         const isToday = resDate.getDate() === today.getDate() &&
                         resDate.getMonth() === today.getMonth() &&
@@ -101,11 +174,6 @@ export default function AdminDashboard() {
         if (!isToday) return false;
     }
 
-    if (searchTerm) {
-        const searchLower = searchTerm.toLowerCase();
-        return (res.name || '').toLowerCase().includes(searchLower) || 
-               (res.phone || '').includes(searchLower);
-    }
     return true;
   });
 
@@ -138,7 +206,10 @@ export default function AdminDashboard() {
     if (selectedBillTableId === null) return;
     setIsConfirmingPayment(true);
     try {
-        await confirmPayment(selectedBillTableId);
+        const orderIdsToPay = orders
+            .filter(o => o.tableId === selectedBillTableId && o.status !== 'paid')
+            .map(o => o.id);
+        await confirmPayment(orderIdsToPay);
         setSelectedBillTableId(null); 
     } catch (error) {
         console.error(error);
@@ -257,6 +328,16 @@ export default function AdminDashboard() {
                                     )}
                                 </span>
                             </button>
+                            <button 
+                                onClick={() => setActiveTab('menu')}
+                                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+                                    activeTab === 'menu' 
+                                    ? 'bg-white text-slate-800 shadow-sm' 
+                                    : 'text-white/70 hover:text-white'
+                                }`}
+                            >
+                                <span className="flex items-center gap-2"><Utensils size={16} /> จัดการเมนู</span>
+                            </button>
                         </div>
 
                         <div className="flex gap-2 w-full md:w-auto">
@@ -287,7 +368,7 @@ export default function AdminDashboard() {
                         </div>
                     </div>
 
-                    <GlassCard className="overflow-hidden !bg-white/90">
+                    <GlassCard className="overflow-hidden !bg-white/80 backdrop-blur-xl border border-white/50 shadow-xl">
                         <div className="overflow-x-auto min-h-[300px]">
                             {activeTab === 'bills' && (
                                 <div className="p-6">
@@ -356,14 +437,15 @@ export default function AdminDashboard() {
                                                 const dateA = a.timestamp instanceof Date ? a.timestamp : new Date(a.timestamp);
                                                 const dateB = b.timestamp instanceof Date ? b.timestamp : new Date(b.timestamp);
                                                 return dateB.getTime() - dateA.getTime();
-                                            }).map((order) => {
+                                            }).map((order, index) => {
                                                 const orderTotal = (order.items || []).reduce((sum, item) => sum + (item.price * (item.qty || 1)), 0);
                                                 const orderDate = order.timestamp instanceof Date ? order.timestamp : new Date(order.timestamp);
+                                                const orderNumber = tableOrders.length - index;
                                                 
                                                 return (
-                                                    <tr key={order.id} className="hover:bg-slate-50/80 transition">
-                                                        <td className="p-4 text-sm font-mono text-slate-500">#{order.id.slice(0, 8)}</td>
-                                                        <td className="p-4 text-sm text-slate-600">
+                                                    <tr key={order.id} className="hover:bg-white/50 transition">
+                                                        <td className="p-4 text-sm font-bold text-slate-800">#{orderNumber}</td>
+                                                        <td className="p-4 text-sm text-slate-700">
                                                             {orderDate.toLocaleTimeString('th-TH', {hour: '2-digit', minute:'2-digit'})}
                                                             <span className="block text-xs text-slate-400">
                                                                 {orderDate.toLocaleDateString('th-TH')}
@@ -468,6 +550,64 @@ export default function AdminDashboard() {
                                     </tbody>
                                 </table>
                             )}
+
+                            {activeTab === 'menu' && (
+                                <div className="space-y-4">
+                                    <div className="flex justify-end">
+                                        <GlassButton onClick={openAddMenu} active className="flex items-center gap-2 py-2 px-4 !bg-gradient-to-r !from-indigo-500 !to-purple-500 border-0">
+                                            <Plus size={16} />
+                                            เพิ่มเมนูอาหาร
+                                        </GlassButton>
+                                    </div>
+                                    <table className="w-full text-left border-collapse">
+                                        <thead>
+                                            <tr className="bg-slate-100/50 border-b border-slate-200">
+                                                <th className="p-4 font-semibold text-slate-600 text-sm">รูป/ไอคอน</th>
+                                                <th className="p-4 font-semibold text-slate-600 text-sm">ชื่อเมนู</th>
+                                                <th className="p-4 font-semibold text-slate-600 text-sm">หมวดหมู่</th>
+                                                <th className="p-4 font-semibold text-slate-600 text-sm">ราคา</th>
+                                                <th className="p-4 font-semibold text-slate-600 text-sm text-center">จัดการ</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {menuItems.filter(item => {
+                                                if (!searchTerm) return true;
+                                                const searchLower = searchTerm.toLowerCase();
+                                                return (item.name || '').toLowerCase().includes(searchLower) || 
+                                                       (item.category || '').toLowerCase().includes(searchLower);
+                                            }).length === 0 ? (
+                                                <tr><td colSpan={5} className="p-8 text-center text-slate-400">ยังไม่มีรายการเมนูที่ตรงกับการค้นหา</td></tr>
+                                            ) : (
+                                                menuItems.filter(item => {
+                                                    if (!searchTerm) return true;
+                                                    const searchLower = searchTerm.toLowerCase();
+                                                    return (item.name || '').toLowerCase().includes(searchLower) || 
+                                                           (item.category || '').toLowerCase().includes(searchLower);
+                                                }).map((item) => (
+                                                    <tr key={item.id} className="hover:bg-slate-50/80 transition border-b border-slate-100">
+                                                        <td className="p-4 text-2xl">{item.image}</td>
+                                                        <td className="p-4 font-medium text-slate-800">{item.name}</td>
+                                                        <td className="p-4 text-sm text-slate-600">
+                                                            <span className="bg-slate-100 px-2 py-1 rounded-md text-xs">{item.category}</span>
+                                                        </td>
+                                                        <td className="p-4 text-sm font-bold text-slate-800">฿{item.price}</td>
+                                                        <td className="p-4 text-center">
+                                                            <div className="flex justify-center gap-2">
+                                                                <button onClick={() => openEditMenu(item)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition" title="แก้ไข">
+                                                                    <Edit size={16} />
+                                                                </button>
+                                                                <button onClick={() => handleDeleteMenu(item.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition" title="ลบ">
+                                                                    <Trash2 size={16} />
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
                         </div>
                     </GlassCard>
                 </div>
@@ -525,13 +665,96 @@ export default function AdminDashboard() {
                             disabled={isConfirmingPayment}
                             className="flex-[1.5] py-3 shadow-lg !bg-gradient-to-r !from-emerald-500 !to-teal-500 border-0"
                         >
-                            {isConfirmingPayment ? (
-                                <span className="flex items-center justify-center gap-2">
-                                    <Loader2 size={18} className="animate-spin" /> กำลังบันทึก...
-                                </span>
-                            ) : "ยืนยันรับเงิน"}
+                            <span className="flex items-center justify-center gap-2">
+                                  {isConfirmingPayment ? <Loader2 size={20} className="animate-spin inline mr-2" /> : <CheckCircle size={20} className="inline mr-2" />}
+                            ยืนยันรับชำระเงิน</span>
                         </GlassButton>
                     </div>
+                </GlassCard>
+            </div>
+        )}
+
+        {/* --- MODAL: Menu Management --- */}
+        {isMenuModalOpen && (
+            <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in p-6">
+                <GlassCard className="p-6 w-full max-w-md flex flex-col !bg-white/95 shadow-2xl">
+                    <div className="flex justify-between items-center mb-4 pb-4 border-b border-slate-100">
+                        <div className="flex items-center gap-3">
+                            <div className="bg-indigo-100 p-2 rounded-full text-indigo-600">
+                                {editingMenuItem ? <Edit size={24} /> : <Plus size={24} />}
+                            </div>
+                            <h3 className="text-xl font-bold text-slate-800">{editingMenuItem ? 'แก้ไขเมนู' : 'เพิ่มเมนูใหม่'}</h3>
+                        </div>
+                        <button onClick={() => setIsMenuModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+                            <X size={24} />
+                        </button>
+                    </div>
+                    
+                    <form onSubmit={handleSaveMenu} className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">ชื่อเมนู</label>
+                            <input 
+                                type="text" 
+                                required
+                                value={menuForm.name}
+                                onChange={(e) => setMenuForm({...menuForm, name: e.target.value})}
+                                className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                                placeholder="เช่น ต้มยำกุ้ง"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">หมวดหมู่</label>
+                            <input 
+                                type="text" 
+                                required
+                                value={menuForm.category}
+                                onChange={(e) => setMenuForm({...menuForm, category: e.target.value})}
+                                className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                                placeholder="เช่น ต้ม/แกง, อาหารจานเดียว"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">ราคา (บาท)</label>
+                            <input 
+                                type="number" 
+                                required
+                                min="0"
+                                value={menuForm.price}
+                                onChange={(e) => setMenuForm({...menuForm, price: e.target.value})}
+                                className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                                placeholder="เช่น 150"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">ไอคอน / รูปภาพ (Emoji หรือ URL)</label>
+                            <input 
+                                type="text" 
+                                required
+                                value={menuForm.image}
+                                onChange={(e) => setMenuForm({...menuForm, image: e.target.value})}
+                                className="w-full px-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white text-2xl"
+                                placeholder="เช่น 🍲 หรือ https://..."
+                            />
+                        </div>
+
+                        <div className="flex gap-3 pt-4 border-t border-slate-100">
+                            <button 
+                                type="button"
+                                onClick={() => setIsMenuModalOpen(false)}
+                                className="flex-1 py-3 text-slate-600 font-bold hover:bg-slate-100 rounded-xl transition border border-slate-200"
+                            >
+                                ยกเลิก
+                            </button>
+                            <GlassButton 
+                                type="submit"
+                                active 
+                                disabled={isSavingMenu}
+                                className="flex-[1.5] py-3 shadow-lg !bg-gradient-to-r !from-indigo-500 !to-purple-500 border-0 flex justify-center"
+                            >
+                                {isSavingMenu ? <Loader2 size={20} className="animate-spin" /> : 'บันทึกข้อมูล'}
+                            </GlassButton>
+                        </div>
+                    </form>
                 </GlassCard>
             </div>
         )}

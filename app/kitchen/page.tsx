@@ -4,13 +4,29 @@ import { useRouter } from 'next/navigation';
 import { ChefHat, Clock, CheckCircle, Bell, Lock, KeyRound, Receipt } from 'lucide-react';
 import { GlassCard, GlassButton } from '@/components/ui/Glass';
 import { useRestaurant, TABLES } from '@/context/RestaurantContext';
+import { useNotification } from '@/context/NotificationContext';
 import Navbar from '@/components/Navbar';
 
 export default function KitchenPage() {
   const router = useRouter();
   const { orders, updateOrderStatus, confirmPayment } = useRestaurant();
+  const { showAlert } = useNotification();
   const [showPinModal, setShowPinModal] = useState(false);
   const [pin, setPin] = useState('');
+  const [selectedBills, setSelectedBills] = useState<string[]>([]);
+
+  const toggleBillSelection = (orderId: string) => {
+    setSelectedBills(prev => 
+      prev.includes(orderId) ? prev.filter(id => id !== orderId) : [...prev, orderId]
+    );
+  };
+
+  const handleBulkPayment = async () => {
+    if (selectedBills.length === 0) return;
+    await confirmPayment(selectedBills);
+    setSelectedBills([]);
+    showAlert(`ชำระเงินสำเร็จ ${selectedBills.length} รายการ`, 'success');
+  };
 
   // เรียงลำดับออเดอร์: รอปรุง -> กำลังปรุง -> เสร็จแล้ว -> เรียกบิล
   // กรอง 'paid' ออก เพื่อไม่ให้รกหน้าครัว
@@ -48,7 +64,7 @@ export default function KitchenPage() {
       setShowPinModal(false);
       router.push('/admin/dashboard');
     } else {
-      alert('รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่');
+      showAlert('รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่', 'error');
       setPin('');
     }
   };
@@ -146,10 +162,14 @@ export default function KitchenPage() {
                         )}
                          {order.status === 'bill_requested' && (
                             <button
-                                onClick={() => confirmPayment(order.tableId)}
-                                className="flex-1 bg-gradient-to-r from-purple-500 to-indigo-500 text-white py-3 rounded-xl font-bold shadow-md hover:shadow-lg transition active:scale-95 flex items-center justify-center gap-2"
+                                onClick={() => toggleBillSelection(order.id)}
+                                className={`flex-1 py-3 rounded-xl font-bold shadow-md hover:shadow-lg transition active:scale-95 flex items-center justify-center gap-2 ${
+                                    selectedBills.includes(order.id) 
+                                    ? 'bg-purple-100 text-purple-700 border-2 border-purple-500'
+                                    : 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white'
+                                }`}
                             >
-                                <Receipt size={20} /> ยืนยันรับเงิน
+                                <Receipt size={20} /> {selectedBills.includes(order.id) ? 'เลือกแล้ว' : 'เลือกรับเงิน'}
                             </button>
                         )}
                     </div>
@@ -157,6 +177,20 @@ export default function KitchenPage() {
               </div>
             ))}
           </div>
+        )}
+
+        {/* Floating Bulk Payment Button */}
+        {selectedBills.length > 0 && (
+            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-slide-up">
+                <GlassButton 
+                    onClick={handleBulkPayment}
+                    active
+                    className="!bg-gradient-to-r !from-purple-500 !to-indigo-500 !text-white px-8 py-4 !rounded-full shadow-2xl text-lg font-bold flex items-center gap-3 border-2 border-white/20 hover:scale-105 transition-all"
+                >
+                    <Receipt size={24} />
+                    ยืนยันรับเงิน {selectedBills.length} บิล
+                </GlassButton>
+            </div>
         )}
 
         {/* PIN Modal remains same */}

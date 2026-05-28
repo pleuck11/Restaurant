@@ -21,7 +21,7 @@ import {
 
 // Types
 export interface MenuItem {
-  id: number;
+  id: string | number;
   name: string;
   category: string;
   price: number;
@@ -49,15 +49,19 @@ interface RestaurantContextType {
   reservations: any[];
   selectedTable: Table | null;
   isLoading: boolean;
+  menuItems: MenuItem[];
   addToCart: (item: MenuItem) => void;
-  updateQty: (itemId: number, change: number) => void;
+  updateQty: (itemId: string | number, change: number) => void;
   placeOrder: () => Promise<void>;
   checkBill: () => Promise<void>;
-  confirmPayment: (tableId: number) => Promise<void>;
+  confirmPayment: (orderIds: string[]) => Promise<void>;
   setSelectedTable: (table: Table | null) => void;
-  updateOrderStatus: (orderId: string, status: Order['status']) => void;
-  updateReservationStatus: (id: string, status: string) => void;
+  updateOrderStatus: (orderId: string | number, status: Order['status']) => void;
+  updateReservationStatus: (id: string | number, status: string) => void;
   addReservation: (res: any) => void;
+  addMenuItem: (item: Omit<MenuItem, 'id'>) => Promise<void>;
+  updateMenuItem: (id: string | number, item: Partial<MenuItem>) => Promise<void>;
+  deleteMenuItem: (id: string | number) => Promise<void>;
 }
 
 const RestaurantContext = createContext<RestaurantContextType | undefined>(undefined);
@@ -76,17 +80,18 @@ export const MENU_ITEMS = [
 
 export const TABLES = Array.from({ length: 8 }, (_, i) => ({ id: i + 1, name: `โต๊ะ ${i + 1}` }));
 
-// Config Firebase ของคุณ
+// Firebase Config จาก Environment Variables
 const firebaseConfig = {
-  apiKey: "AIzaSyCZQIN1_uf9E26j-3x5Hv1KsWKOermVjd0",
-  authDomain: "restaurant-7b466.firebaseapp.com",
-  projectId: "restaurant-7b466",
-  storageBucket: "restaurant-7b466.firebasestorage.app",
-  messagingSenderId: "850480414202",
-  appId: "1:850480414202:web:634b37546cacf3cc26f843"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-const appId = 'restaurant-7b466';
+// Collection ID สำหรับโปรเจคนี้
+const PROJECT_COLLECTION = 'restaurant';
 
 // Initialize App
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
@@ -95,6 +100,7 @@ const db = getFirestore(app);
 
 export const RestaurantProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<any>(null);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [cart, setCart] = useState<MenuItem[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [reservations, setReservations] = useState<any[]>([]);
@@ -125,16 +131,16 @@ export const RestaurantProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (!user || !db) return;
 
-    // Sync Orders
-    const ordersRef = collection(db, 'orders');
+    // Sync Orders (sub-collection ภายใต้ restaurant/config)
+    const ordersRef = collection(db, PROJECT_COLLECTION, 'orders', 'list');
     const qOrders = query(ordersRef); 
 
     const unsubOrders = onSnapshot(qOrders, (snapshot) => {
       const loadedOrders = snapshot.docs.map(doc => {
         const data = doc.data();
         return {
-          id: doc.id,
           ...data,
+          id: doc.id,
           timestamp: data.timestamp?.toDate ? data.timestamp.toDate() : new Date(data.timestamp),
         };
       }) as Order[];
@@ -145,24 +151,53 @@ export const RestaurantProvider = ({ children }: { children: ReactNode }) => {
       setIsLoading(false);
     });
 
-    // Sync Reservations
-    const reservationsRef = collection(db, 'reservations');
+    // Sync Reservations (sub-collection ภายใต้ restaurant/config)
+    const reservationsRef = collection(db, PROJECT_COLLECTION, 'reservations', 'list');
     const qReservations = query(reservationsRef);
 
     const unsubReservations = onSnapshot(qReservations, (snapshot) => {
       const loadedReservations = snapshot.docs.map(doc => {
         const data = doc.data();
         return {
-            id: doc.id,
-            ...data
+            ...data,
+            id: doc.id
         };
       });
       setReservations(loadedReservations);
     }, (error) => console.error("Reservations sync error:", error));
 
+    // Sync Menu Items
+    const menuItemsRef = collection(db, PROJECT_COLLECTION, 'menuItems', 'list');
+    const qMenuItems = query(menuItemsRef);
+
+    const unsubMenuItems = onSnapshot(qMenuItems, (snapshot) => {
+      if (snapshot.empty && user) {
+        // Seed mock data if empty
+        console.log("Seeding initial menu items...");
+        MENU_ITEMS.forEach((item) => {
+          addDoc(menuItemsRef, {
+            name: item.name,
+            category: item.category,
+            price: item.price,
+            image: item.image,
+          }).catch(console.error);
+        });
+      }
+
+      const loadedMenuItems = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          ...data,
+          id: doc.id
+        } as MenuItem;
+      });
+      setMenuItems(loadedMenuItems);
+    }, (error) => console.error("Menu items sync error:", error));
+
     return () => {
       unsubOrders();
       unsubReservations();
+      unsubMenuItems();
     };
   }, [user]);
 
@@ -179,7 +214,7 @@ export const RestaurantProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
-  const updateQty = (itemId: number, change: number) => {
+  const updateQty = (itemId: string | number, change: number) => {
     setCart(prev => prev.map(i => {
       if (i.id === itemId) {
         const newQty = Math.max(0, (i.qty || 0) + change);
@@ -198,7 +233,7 @@ export const RestaurantProvider = ({ children }: { children: ReactNode }) => {
           status: 'pending',
           timestamp: new Date(), 
         };
-        await addDoc(collection(db, 'orders'), newOrder);
+        await addDoc(collection(db, PROJECT_COLLECTION, 'orders', 'list'), newOrder);
         setCart([]);
     } catch (error) {
         console.error("Place order error:", error);
@@ -211,7 +246,7 @@ export const RestaurantProvider = ({ children }: { children: ReactNode }) => {
     try {
         const tableOrders = orders.filter(o => o.tableId === selectedTable.id && o.status !== 'bill_requested' && o.status !== 'paid');
         const updatePromises = tableOrders.map(order => 
-            updateDoc(doc(db, 'orders', order.id), { status: 'bill_requested' })
+            updateDoc(doc(db, PROJECT_COLLECTION, 'orders', 'list', order.id), { status: 'bill_requested' })
         );
         await Promise.all(updatePromises);
     } catch (error) {
@@ -221,42 +256,38 @@ export const RestaurantProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // [แก้ไขสำคัญ]: เปลี่ยนจากลบออเดอร์ เป็นอัปเดตสถานะเป็น 'paid' เพื่อเก็บประวัติ
-  const confirmPayment = async (tableId: number) => {
-    if (!db || !user) return;
+  // [แก้ไขล่าสุด]: รองรับการรับชำระเงินหลายบิลพร้อมกัน (รับ array ของ orderId)
+  const confirmPayment = async (orderIds: string[]) => {
+    if (!db || !user || orderIds.length === 0) return;
     try {
-        // หาออเดอร์ของโต๊ะนี้ที่ยังไม่ได้จ่ายเงิน
-        const tableOrders = orders.filter(o => o.tableId === tableId && o.status !== 'paid');
-        
-        // อัปเดตสถานะเป็น 'paid' แทนการ deleteDoc
-        const updatePromises = tableOrders.map(order => 
-            updateDoc(doc(db, 'orders', order.id), { status: 'paid' })
+        const updatePromises = orderIds.map(id => 
+            updateDoc(doc(db, PROJECT_COLLECTION, 'orders', 'list', String(id)), { status: 'paid' })
         );
         
         await Promise.all(updatePromises);
         
-        if (selectedTable?.id === tableId) {
-            setSelectedTable(null);
-        }
+        // ถ้าโต๊ะปัจจุบันถูกจ่ายเงินหมดแล้ว (เคลียร์ให้ถ้าจำเป็น)
+        // จริงๆ ควรเช็คว่าบิลของโต๊ะนี้ถูกจ่ายหมดไหม แต่เพื่อให้ง่าย ลบออกไปก่อน
     } catch (error) {
         console.error("Confirm payment error:", error);
         throw error;
     }
   };
 
-  const updateOrderStatus = async (orderId: string, status: Order['status']) => {
+  const updateOrderStatus = async (orderId: string | number, status: Order['status']) => {
     if (!db || !user) return;
     try {
-        const orderRef = doc(db, 'orders', orderId);
+        const orderRef = doc(db, PROJECT_COLLECTION, 'orders', 'list', String(orderId));
         await updateDoc(orderRef, { status });
     } catch (error) {
         console.error("Update status error:", error);
     }
   };
 
-  const updateReservationStatus = async (id: string, status: string) => {
+  const updateReservationStatus = async (id: string | number, status: string) => {
     if (!db || !user) return;
     try {
-        const resRef = doc(db, 'reservations', id);
+        const resRef = doc(db, PROJECT_COLLECTION, 'reservations', 'list', String(id));
         await updateDoc(resRef, { status });
     } catch (error) {
         console.error("Update reservation status error:", error);
@@ -266,17 +297,50 @@ export const RestaurantProvider = ({ children }: { children: ReactNode }) => {
   const addReservation = async (res: any) => {
     if (!db || !user) return;
     try {
-        await addDoc(collection(db, 'reservations'), res);
+        await addDoc(collection(db, PROJECT_COLLECTION, 'reservations', 'list'), res);
     } catch (error) {
         console.error("Add reservation error:", error);
         throw error;
     }
   };
 
+  const addMenuItem = async (item: Omit<MenuItem, 'id'>) => {
+    if (!db || !user) return;
+    try {
+      await addDoc(collection(db, PROJECT_COLLECTION, 'menuItems', 'list'), item);
+    } catch (error) {
+      console.error("Add menu item error:", error);
+      throw error;
+    }
+  };
+
+  const updateMenuItem = async (id: string | number, item: Partial<MenuItem>) => {
+    if (!db || !user) return;
+    try {
+      const menuRef = doc(db, PROJECT_COLLECTION, 'menuItems', 'list', String(id));
+      await updateDoc(menuRef, item);
+    } catch (error) {
+      console.error("Update menu item error:", error);
+      throw error;
+    }
+  };
+
+  const deleteMenuItem = async (id: string | number) => {
+    if (!db || !user) return;
+    try {
+      const menuRef = doc(db, PROJECT_COLLECTION, 'menuItems', 'list', String(id));
+      await deleteDoc(menuRef);
+    } catch (error) {
+      console.error("Delete menu item error:", error);
+      throw error;
+    }
+  };
+
   return (
     <RestaurantContext.Provider value={{
-      cart, orders, reservations, selectedTable, isLoading,
-      addToCart, updateQty, placeOrder, checkBill, confirmPayment, setSelectedTable, updateOrderStatus, updateReservationStatus, addReservation
+      menuItems, cart, orders, reservations, selectedTable, isLoading,
+      addToCart, updateQty, placeOrder, checkBill, confirmPayment, setSelectedTable, updateOrderStatus, updateReservationStatus, addReservation,
+      addMenuItem, updateMenuItem, deleteMenuItem
     }}>
       {children}
     </RestaurantContext.Provider>
