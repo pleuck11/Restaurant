@@ -68,7 +68,7 @@ const RestaurantContext = createContext<RestaurantContextType | undefined>(undef
 
 // Mock Data
 export const MENU_ITEMS = [
-  { id: 1, name: 'ต้มยำกุ้งน้ำข้น.', category: 'ต้ม/แกง', price: 250, image: '🍲' },
+  { id: 1, name: 'ต้มยำกุ้งน้ำข้น', category: 'ต้ม/แกง', price: 250, image: '🍲' },
   { id: 2, name: 'ผัดไทยกุ้งสด', category: 'อาหารจานเดียว', price: 120, image: '🍝' },
   { id: 3, name: 'ส้มตำไทย', category: 'ยำ/ตำ', price: 80, image: '🥗' },
   { id: 4, name: 'ไก่ย่างสมุนไพร', category: 'ย่าง/ทอด', price: 180, image: '🍗' },
