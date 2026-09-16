@@ -16,7 +16,6 @@
 </p>
 
 [✨ จุดเด่นฟีเจอร์](#-จุดเด่นและโมดูลระบบ) •
-[🏗️ สถาปัตยกรรมระบบ](#️-สถาปัตยกรรมและการไหลของข้อมูล) •
 [🎨 ธีมและดีไซน์](#-ธีมและการออกแบบ-warm-culinary-stone) •
 [🔒 ความปลอดภัย](#-ความปลอดภัยและ-firestore-rules) •
 [🚀 การติดตั้ง](#-การติดตั้งและเริ่มต้นใช้งาน)
@@ -59,39 +58,6 @@
 - **Reservation Management**: ตารางตรวจสอบรายชื่อผู้สำรองโต๊ะล่วงหน้าพร้อมรายละเอียดครบถ้วน
 - **Menu Catalog & Portfolio Protection**: หน้าแสดงรายการเมนูอาหารทั้งหมด โดยทำการ **ล็อกปุ่ม (Disabled)** สำหรับการเพิ่ม, แก้ไข, และลบเมนู เพื่อป้องกันข้อมูลถูกแก้ไขโดยไม่ตั้งใจในการนำเสนอผลงานพอร์ตโฟลิโอ
 - **Reset Demo Data**: ปุ่มรีเซ็ตข้อมูลตัวอย่างกลับสู่ค่าตั้งต้นได้ตลอดเวลา
-
----
-
-## 🏗️ สถาปัตยกรรมและการไหลของข้อมูล (System Architecture)
-
-```mermaid
-flowchart TD
-    subgraph Client ["💻 ฝั่งผู้ใช้งาน (Front-end: Next.js + React)"]
-        A["📱 ลูกค้า (Customer Ordering / Reservation)"]
-        B["🍳 ห้องครัว (Kitchen Display System - KDS)"]
-        C["📊 ผู้จัดการร้าน (Admin Dashboard)"]
-    end
-
-    subgraph StateManagement ["🔄 การจัดการสถานะ (State & Fallback)"]
-        D["RestaurantContext / NotificationContext"]
-        E["LocalStorage (Offline Demo Mode)"]
-    end
-
-    subgraph Cloud ["☁️ Google Firebase Backend"]
-        F["Firebase Anonymous Auth"]
-        G[("Firestore Realtime Database
-        /restaurant/{col}/list")]
-    end
-
-    A -->|"กดสั่งอาหาร / จองโต๊ะ"| D
-    D -->|"ซิงก์ข้อมูล"| G
-    D -.->|"ถ้าไม่มี Firebase"| E
-    G -->|"Real-time Snapshot Listener"| B
-    G -->|"Real-time Analytics"| C
-    B -->|"อัปเดตสถานะ กำลังปรุง/เสิร์ฟ"| G
-    C -->|"เช็คบิล / ปิดโต๊ะ"| G
-    F -->|"ยืนยันตัวตนอัตโนมัติ"| D
-```
 
 ---
 
