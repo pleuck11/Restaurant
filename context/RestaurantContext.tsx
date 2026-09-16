@@ -15,33 +15,43 @@ import {
   query, 
   updateDoc, 
   doc, 
-  deleteDoc, 
-  Timestamp 
+  deleteDoc,
+  getDocs
 } from 'firebase/firestore';
+
+import { 
+  MENU_ITEMS_DATA, 
+  TABLES_DATA, 
+  DEMO_ORDERS, 
+  DEMO_RESERVATIONS, 
+  MenuItemData, 
+  TableData 
+} from '@/data';
 
 // Types
 export interface MenuItem {
   id: string | number;
   name: string;
+  nameEn?: string;
+  description?: string;
   category: string;
   price: number;
   image: string;
   qty?: number;
+  spicyLevel?: number;
+  isPopular?: boolean;
+  isSignature?: boolean;
 }
 
 export interface Order {
   id: string;
   tableId: number;
   items: MenuItem[];
-  // เพิ่มสถานะ 'paid' เพื่อเก็บประวัติ
   status: 'pending' | 'cooking' | 'served' | 'bill_requested' | 'paid';
   timestamp: Date | any;
 }
 
-interface Table {
-  id: number;
-  name: string;
-}
+export type Table = TableData;
 
 interface RestaurantContextType {
   cart: MenuItem[];
@@ -49,6 +59,7 @@ interface RestaurantContextType {
   reservations: any[];
   selectedTable: Table | null;
   isLoading: boolean;
+  isHydrated: boolean;
   menuItems: MenuItem[];
   addToCart: (item: MenuItem) => void;
   updateQty: (itemId: string | number, change: number) => void;
@@ -62,23 +73,14 @@ interface RestaurantContextType {
   addMenuItem: (item: Omit<MenuItem, 'id'>) => Promise<void>;
   updateMenuItem: (id: string | number, item: Partial<MenuItem>) => Promise<void>;
   deleteMenuItem: (id: string | number) => Promise<void>;
+  resetDemoData: () => void;
 }
 
 const RestaurantContext = createContext<RestaurantContextType | undefined>(undefined);
 
-// Mock Data
-export const MENU_ITEMS = [
-  { id: 1, name: 'ต้มยำกุ้งน้ำข้น', category: 'ต้ม/แกง', price: 250, image: '🍲' },
-  { id: 2, name: 'ผัดไทยกุ้งสด', category: 'อาหารจานเดียว', price: 120, image: '🍝' },
-  { id: 3, name: 'ส้มตำไทย', category: 'ยำ/ตำ', price: 80, image: '🥗' },
-  { id: 4, name: 'ไก่ย่างสมุนไพร', category: 'ย่าง/ทอด', price: 180, image: '🍗' },
-  { id: 5, name: 'ข้าวผัดปู', category: 'อาหารจานเดียว', price: 150, image: '🍚' },
-  { id: 6, name: 'น้ำแตงโมปั่น', category: 'เครื่องดื่ม', price: 60, image: '🍉' },
-  { id: 7, name: 'ชามะนาว', category: 'เครื่องดื่ม', price: 45, image: '🍋' },
-  { id: 8, name: 'ปลากะพงทอดน้ำปลา', category: 'ย่าง/ทอด', price: 450, image: '🐟' },
-];
-
-export const TABLES = Array.from({ length: 8 }, (_, i) => ({ id: i + 1, name: `โต๊ะ ${i + 1}` }));
+// Export Menu Items and Tables for backward compatibility and direct usage
+export const MENU_ITEMS: MenuItem[] = MENU_ITEMS_DATA as MenuItem[];
+export const TABLES: Table[] = TABLES_DATA;
 
 // Firebase Config จาก Environment Variables
 const firebaseConfig = {
@@ -90,34 +92,113 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Collection ID สำหรับโปรเจคนี้
 const PROJECT_COLLECTION = 'restaurant';
 
-// Initialize App
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-const auth = getAuth(app);
-const db = getFirestore(app);
+// Initialize Firebase safely
+let app: any = null;
+let auth: any = null;
+let db: any = null;
+
+try {
+  if (firebaseConfig.apiKey && firebaseConfig.projectId) {
+    app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+    auth = getAuth(app);
+    db = getFirestore(app);
+  }
+} catch (e) {
+  console.warn("Firebase init skipped or failed, running in Demo Mode with local storage:", e);
+}
+
+// Local Storage Keys
+const STORAGE_KEYS = {
+  MENU: 'restaurant_demo_menu_v2',
+  ORDERS: 'restaurant_demo_orders_v2',
+  RESERVATIONS: 'restaurant_demo_reservations_v2',
+  TABLE: 'restaurant_demo_table_v2',
+};
 
 export const RestaurantProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<any>(null);
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [isHydrated, setIsHydrated] = useState(false);
+  
+  // Deterministic initial states for SSR matching
+  const [menuItems, setMenuItems] = useState<MenuItem[]>(MENU_ITEMS_DATA as MenuItem[]);
   const [cart, setCart] = useState<MenuItem[]>([]);
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [reservations, setReservations] = useState<any[]>([]);
-  const [selectedTable, setSelectedTable] = useState<Table | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [orders, setOrders] = useState<Order[]>(DEMO_ORDERS);
+  const [reservations, setReservations] = useState<any[]>(DEMO_RESERVATIONS);
+  const [selectedTable, setSelectedTableState] = useState<Table | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // 1. Authentication
+  // Load from localStorage only on client after mount (prevents SSR hydration mismatch)
   useEffect(() => {
-    if (!auth) {
-        setIsLoading(false);
-        return;
+    try {
+      const savedMenu = localStorage.getItem(STORAGE_KEYS.MENU);
+      if (savedMenu) {
+        setMenuItems(JSON.parse(savedMenu));
+      }
+      const savedOrders = localStorage.getItem(STORAGE_KEYS.ORDERS);
+      if (savedOrders) {
+        const parsed = JSON.parse(savedOrders);
+        setOrders(parsed.map((o: any) => ({
+          ...o,
+          timestamp: new Date(o.timestamp),
+        })));
+      }
+      const savedRes = localStorage.getItem(STORAGE_KEYS.RESERVATIONS);
+      if (savedRes) {
+        setReservations(JSON.parse(savedRes));
+      }
+      const savedTable = localStorage.getItem(STORAGE_KEYS.TABLE);
+      if (savedTable) {
+        setSelectedTableState(JSON.parse(savedTable));
+      }
+    } catch (e) {
+      console.warn("Failed to load local storage state:", e);
     }
+    setIsHydrated(true);
+  }, []);
+
+  // Sync state changes to Local Storage only after hydration is complete
+  useEffect(() => {
+    if (!isHydrated) return;
+    try {
+      localStorage.setItem(STORAGE_KEYS.MENU, JSON.stringify(menuItems));
+    } catch (e) {}
+  }, [menuItems, isHydrated]);
+
+  useEffect(() => {
+    if (!isHydrated) return;
+    try {
+      localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(orders));
+    } catch (e) {}
+  }, [orders, isHydrated]);
+
+  useEffect(() => {
+    if (!isHydrated) return;
+    try {
+      localStorage.setItem(STORAGE_KEYS.RESERVATIONS, JSON.stringify(reservations));
+    } catch (e) {}
+  }, [reservations, isHydrated]);
+
+  const setSelectedTable = (table: Table | null) => {
+    setSelectedTableState(table);
+    try {
+      if (table) {
+        localStorage.setItem(STORAGE_KEYS.TABLE, JSON.stringify(table));
+      } else {
+        localStorage.removeItem(STORAGE_KEYS.TABLE);
+      }
+    } catch (e) {}
+  };
+
+  // 1. Firebase Authentication (if configured)
+  useEffect(() => {
+    if (!auth) return;
     const initAuth = async () => {
       try {
         await signInAnonymously(auth);
       } catch (error) {
-        console.error("Auth Error:", error);
+        console.warn("Firebase Auth Error, staying in offline demo mode:", error);
       }
     };
     initAuth();
@@ -127,44 +208,46 @@ export const RestaurantProvider = ({ children }: { children: ReactNode }) => {
     return () => unsubscribe();
   }, []);
 
-  // 2. Data Sync
+  // 2. Firebase Realtime Sync (if user logged in & Firestore is available)
   useEffect(() => {
     if (!user || !db) return;
 
-    // Sync Orders (sub-collection ภายใต้ restaurant/config)
+    // Sync Orders
     const ordersRef = collection(db, PROJECT_COLLECTION, 'orders', 'list');
     const qOrders = query(ordersRef); 
 
     const unsubOrders = onSnapshot(qOrders, (snapshot) => {
-      const loadedOrders = snapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          ...data,
-          id: doc.id,
-          timestamp: data.timestamp?.toDate ? data.timestamp.toDate() : new Date(data.timestamp),
-        };
-      }) as Order[];
-      setOrders(loadedOrders);
-      setIsLoading(false);
+      if (!snapshot.empty) {
+        const loadedOrders = snapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            ...data,
+            id: doc.id,
+            timestamp: data.timestamp?.toDate ? data.timestamp.toDate() : new Date(data.timestamp),
+          };
+        }) as Order[];
+        setOrders(loadedOrders);
+      }
     }, (error) => {
-      console.error("Orders sync error:", error);
-      setIsLoading(false);
+      console.warn("Orders Firebase sync error:", error);
     });
 
-    // Sync Reservations (sub-collection ภายใต้ restaurant/config)
+    // Sync Reservations
     const reservationsRef = collection(db, PROJECT_COLLECTION, 'reservations', 'list');
     const qReservations = query(reservationsRef);
 
     const unsubReservations = onSnapshot(qReservations, (snapshot) => {
-      const loadedReservations = snapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
+      if (!snapshot.empty) {
+        const loadedReservations = snapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
             ...data,
             id: doc.id
-        };
-      });
-      setReservations(loadedReservations);
-    }, (error) => console.error("Reservations sync error:", error));
+          };
+        });
+        setReservations(loadedReservations);
+      }
+    }, (error) => console.warn("Reservations Firebase sync error:", error));
 
     // Sync Menu Items
     const menuItemsRef = collection(db, PROJECT_COLLECTION, 'menuItems', 'list');
@@ -172,27 +255,58 @@ export const RestaurantProvider = ({ children }: { children: ReactNode }) => {
 
     const unsubMenuItems = onSnapshot(qMenuItems, (snapshot) => {
       if (snapshot.empty && user) {
-        // Seed mock data if empty
-        console.log("Seeding initial menu items...");
-        MENU_ITEMS.forEach((item) => {
+        // Seed initial data with real food photos if Firestore is empty
+        console.log("Seeding menu with real food images to Firestore...");
+        MENU_ITEMS_DATA.forEach((item) => {
           addDoc(menuItemsRef, {
             name: item.name,
+            nameEn: item.nameEn || '',
+            description: item.description || '',
             category: item.category,
             price: item.price,
             image: item.image,
+            spicyLevel: item.spicyLevel ?? 0,
+            isPopular: item.isPopular ?? false,
+            isSignature: item.isSignature ?? false,
           }).catch(console.error);
         });
-      }
+        setMenuItems(MENU_ITEMS_DATA as MenuItem[]);
+      } else if (!snapshot.empty) {
+        // Check if existing items still use old emoji format
+        const hasOldEmojiFormat = snapshot.docs.some(doc => {
+          const img = doc.data().image;
+          return !img || (!img.startsWith('/') && !img.startsWith('http'));
+        });
 
-      const loadedMenuItems = snapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          ...data,
-          id: doc.id
-        } as MenuItem;
-      });
-      setMenuItems(loadedMenuItems);
-    }, (error) => console.error("Menu items sync error:", error));
+        if (hasOldEmojiFormat && user) {
+          console.log("Upgrading old Firestore emoji items with real food photos...");
+          snapshot.docs.forEach(d => deleteDoc(d.ref).catch(console.error));
+          MENU_ITEMS_DATA.forEach((item) => {
+            addDoc(menuItemsRef, {
+              name: item.name,
+              nameEn: item.nameEn || '',
+              description: item.description || '',
+              category: item.category,
+              price: item.price,
+              image: item.image,
+              spicyLevel: item.spicyLevel ?? 0,
+              isPopular: item.isPopular ?? false,
+              isSignature: item.isSignature ?? false,
+            }).catch(console.error);
+          });
+          setMenuItems(MENU_ITEMS_DATA as MenuItem[]);
+        } else {
+          const loadedMenuItems = snapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+              ...data,
+              id: doc.id
+            } as MenuItem;
+          });
+          setMenuItems(loadedMenuItems);
+        }
+      }
+    }, (error) => console.warn("Menu items Firebase sync error:", error));
 
     return () => {
       unsubOrders();
@@ -201,9 +315,44 @@ export const RestaurantProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [user]);
 
+  // --- Reset Demo Data Function ---
+  const resetDemoData = async () => {
+    setMenuItems(MENU_ITEMS_DATA as MenuItem[]);
+    setOrders(DEMO_ORDERS);
+    setReservations(DEMO_RESERVATIONS);
+    setCart([]);
+    try {
+      localStorage.removeItem(STORAGE_KEYS.MENU);
+      localStorage.removeItem(STORAGE_KEYS.ORDERS);
+      localStorage.removeItem(STORAGE_KEYS.RESERVATIONS);
+      localStorage.removeItem(STORAGE_KEYS.TABLE);
+    } catch (e) {}
 
-  // --- Actions ---
+    if (db && user) {
+      try {
+        const menuItemsRef = collection(db, PROJECT_COLLECTION, 'menuItems', 'list');
+        const snap = await getDocs(query(menuItemsRef));
+        snap.docs.forEach(d => deleteDoc(d.ref).catch(console.error));
+        MENU_ITEMS_DATA.forEach((item) => {
+          addDoc(menuItemsRef, {
+            name: item.name,
+            nameEn: item.nameEn || '',
+            description: item.description || '',
+            category: item.category,
+            price: item.price,
+            image: item.image,
+            spicyLevel: item.spicyLevel ?? 0,
+            isPopular: item.isPopular ?? false,
+            isSignature: item.isSignature ?? false,
+          }).catch(console.error);
+        });
+      } catch (e) {
+        console.warn("Reset Firebase error:", e);
+      }
+    }
+  };
 
+  // --- Cart Actions ---
   const addToCart = (item: MenuItem) => {
     setCart(prev => {
       const existing = prev.find(i => i.id === item.id);
@@ -225,122 +374,184 @@ export const RestaurantProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const placeOrder = async () => {
-    if (cart.length === 0 || !selectedTable || !db || !user) return;
-    try {
-        const newOrder = {
-          tableId: selectedTable.id,
-          items: [...cart],
-          status: 'pending',
-          timestamp: new Date(), 
-        };
+    if (cart.length === 0 || !selectedTable) return;
+    
+    const newOrder: Order = {
+      id: 'ord-' + Date.now().toString().slice(-6),
+      tableId: selectedTable.id,
+      items: [...cart],
+      status: 'pending',
+      timestamp: new Date(), 
+    };
+
+    // Optimistic local update
+    setOrders(prev => [newOrder, ...prev]);
+    setCart([]);
+
+    // Firebase update if online
+    if (db && user) {
+      try {
         await addDoc(collection(db, PROJECT_COLLECTION, 'orders', 'list'), newOrder);
-        setCart([]);
-    } catch (error) {
-        console.error("Place order error:", error);
-        throw error;
+      } catch (error) {
+        console.warn("Firebase place order error:", error);
+      }
     }
   };
 
   const checkBill = async () => {
-    if (!selectedTable || !db || !user) return;
-    try {
+    if (!selectedTable) return;
+
+    // Optimistic local update
+    setOrders(prev => prev.map(order => 
+      order.tableId === selectedTable.id && order.status !== 'paid'
+        ? { ...order, status: 'bill_requested' }
+        : order
+    ));
+
+    // Firebase update if online
+    if (db && user) {
+      try {
         const tableOrders = orders.filter(o => o.tableId === selectedTable.id && o.status !== 'bill_requested' && o.status !== 'paid');
         const updatePromises = tableOrders.map(order => 
-            updateDoc(doc(db, PROJECT_COLLECTION, 'orders', 'list', order.id), { status: 'bill_requested' })
+          updateDoc(doc(db, PROJECT_COLLECTION, 'orders', 'list', order.id), { status: 'bill_requested' })
         );
         await Promise.all(updatePromises);
-    } catch (error) {
-        console.error("Check bill error:", error);
-        throw error;
+      } catch (error) {
+        console.warn("Check bill firebase error:", error);
+      }
     }
   };
 
-  // [แก้ไขสำคัญ]: เปลี่ยนจากลบออเดอร์ เป็นอัปเดตสถานะเป็น 'paid' เพื่อเก็บประวัติ
-  // [แก้ไขล่าสุด]: รองรับการรับชำระเงินหลายบิลพร้อมกัน (รับ array ของ orderId)
   const confirmPayment = async (orderIds: string[]) => {
-    if (!db || !user || orderIds.length === 0) return;
-    try {
+    if (orderIds.length === 0) return;
+
+    // Optimistic local update
+    setOrders(prev => prev.map(order => 
+      orderIds.includes(String(order.id)) ? { ...order, status: 'paid' } : order
+    ));
+
+    // Firebase update if online
+    if (db && user) {
+      try {
         const updatePromises = orderIds.map(id => 
-            updateDoc(doc(db, PROJECT_COLLECTION, 'orders', 'list', String(id)), { status: 'paid' })
+          updateDoc(doc(db, PROJECT_COLLECTION, 'orders', 'list', String(id)), { status: 'paid' })
         );
-        
         await Promise.all(updatePromises);
-        
-        // ถ้าโต๊ะปัจจุบันถูกจ่ายเงินหมดแล้ว (เคลียร์ให้ถ้าจำเป็น)
-        // จริงๆ ควรเช็คว่าบิลของโต๊ะนี้ถูกจ่ายหมดไหม แต่เพื่อให้ง่าย ลบออกไปก่อน
-    } catch (error) {
-        console.error("Confirm payment error:", error);
-        throw error;
+      } catch (error) {
+        console.warn("Confirm payment firebase error:", error);
+      }
     }
   };
 
   const updateOrderStatus = async (orderId: string | number, status: Order['status']) => {
-    if (!db || !user) return;
-    try {
+    // Optimistic local update
+    setOrders(prev => prev.map(order => 
+      order.id === orderId ? { ...order, status } : order
+    ));
+
+    // Firebase update if online
+    if (db && user) {
+      try {
         const orderRef = doc(db, PROJECT_COLLECTION, 'orders', 'list', String(orderId));
         await updateDoc(orderRef, { status });
-    } catch (error) {
-        console.error("Update status error:", error);
+      } catch (error) {
+        console.warn("Update status firebase error:", error);
+      }
     }
   };
 
   const updateReservationStatus = async (id: string | number, status: string) => {
-    if (!db || !user) return;
-    try {
+    // Optimistic local update
+    setReservations(prev => prev.map(res => 
+      res.id === id ? { ...res, status } : res
+    ));
+
+    // Firebase update if online
+    if (db && user) {
+      try {
         const resRef = doc(db, PROJECT_COLLECTION, 'reservations', 'list', String(id));
         await updateDoc(resRef, { status });
-    } catch (error) {
-        console.error("Update reservation status error:", error);
+      } catch (error) {
+        console.warn("Update reservation status firebase error:", error);
+      }
     }
   };
 
   const addReservation = async (res: any) => {
-    if (!db || !user) return;
-    try {
-        await addDoc(collection(db, PROJECT_COLLECTION, 'reservations', 'list'), res);
-    } catch (error) {
-        console.error("Add reservation error:", error);
-        throw error;
+    const newRes = {
+      ...res,
+      id: 'res-' + Date.now().toString().slice(-6),
+      status: 'pending',
+    };
+
+    // Optimistic local update
+    setReservations(prev => [newRes, ...prev]);
+
+    // Firebase update if online
+    if (db && user) {
+      try {
+        await addDoc(collection(db, PROJECT_COLLECTION, 'reservations', 'list'), newRes);
+      } catch (error) {
+        console.warn("Add reservation firebase error:", error);
+      }
     }
   };
 
   const addMenuItem = async (item: Omit<MenuItem, 'id'>) => {
-    if (!db || !user) return;
-    try {
-      await addDoc(collection(db, PROJECT_COLLECTION, 'menuItems', 'list'), item);
-    } catch (error) {
-      console.error("Add menu item error:", error);
-      throw error;
+    const newItem: MenuItem = {
+      ...item,
+      id: 'menu-' + Date.now().toString().slice(-6),
+    };
+
+    // Optimistic local update
+    setMenuItems(prev => [...prev, newItem]);
+
+    // Firebase update if online
+    if (db && user) {
+      try {
+        await addDoc(collection(db, PROJECT_COLLECTION, 'menuItems', 'list'), newItem);
+      } catch (error) {
+        console.warn("Add menu item firebase error:", error);
+      }
     }
   };
 
   const updateMenuItem = async (id: string | number, item: Partial<MenuItem>) => {
-    if (!db || !user) return;
-    try {
-      const menuRef = doc(db, PROJECT_COLLECTION, 'menuItems', 'list', String(id));
-      await updateDoc(menuRef, item);
-    } catch (error) {
-      console.error("Update menu item error:", error);
-      throw error;
+    // Optimistic local update
+    setMenuItems(prev => prev.map(m => m.id === id ? { ...m, ...item } : m));
+
+    // Firebase update if online
+    if (db && user) {
+      try {
+        const menuRef = doc(db, PROJECT_COLLECTION, 'menuItems', 'list', String(id));
+        await updateDoc(menuRef, item);
+      } catch (error) {
+        console.warn("Update menu item firebase error:", error);
+      }
     }
   };
 
   const deleteMenuItem = async (id: string | number) => {
-    if (!db || !user) return;
-    try {
-      const menuRef = doc(db, PROJECT_COLLECTION, 'menuItems', 'list', String(id));
-      await deleteDoc(menuRef);
-    } catch (error) {
-      console.error("Delete menu item error:", error);
-      throw error;
+    // Optimistic local update
+    setMenuItems(prev => prev.filter(m => m.id !== id));
+
+    // Firebase update if online
+    if (db && user) {
+      try {
+        const menuRef = doc(db, PROJECT_COLLECTION, 'menuItems', 'list', String(id));
+        await deleteDoc(menuRef);
+      } catch (error) {
+        console.warn("Delete menu item firebase error:", error);
+      }
     }
   };
 
   return (
     <RestaurantContext.Provider value={{
-      menuItems, cart, orders, reservations, selectedTable, isLoading,
-      addToCart, updateQty, placeOrder, checkBill, confirmPayment, setSelectedTable, updateOrderStatus, updateReservationStatus, addReservation,
-      addMenuItem, updateMenuItem, deleteMenuItem
+      menuItems, cart, orders, reservations, selectedTable, isLoading, isHydrated,
+      addToCart, updateQty, placeOrder, checkBill, confirmPayment, setSelectedTable, 
+      updateOrderStatus, updateReservationStatus, addReservation,
+      addMenuItem, updateMenuItem, deleteMenuItem, resetDemoData
     }}>
       {children}
     </RestaurantContext.Provider>

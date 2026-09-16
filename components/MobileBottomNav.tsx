@@ -19,7 +19,7 @@ export default function MobileBottomNav() {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden">
       {/* Backdrop blur background */}
-      <div className="absolute inset-0 bg-white/70 backdrop-blur-xl border-t border-white/30 shadow-[0_-4px_30px_rgba(0,0,0,0.1)]" />
+      <div className="absolute inset-0 bg-white/95 backdrop-blur-xl border-t border-stone-200/80 shadow-[0_-4px_25px_rgba(0,0,0,0.06)]" />
       
       <div className="relative flex items-center justify-around px-2 pt-2 pb-safe" style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 8px)' }}>
         {navItems.map((item) => {
@@ -33,18 +33,18 @@ export default function MobileBottomNav() {
               className={`flex flex-col items-center gap-0.5 py-1.5 px-3 rounded-2xl transition-all duration-300 min-w-[64px] ${
                 isActive
                   ? 'text-white'
-                  : 'text-slate-400 hover:text-slate-600 active:scale-90'
+                  : 'text-stone-400 hover:text-stone-600 active:scale-90'
               }`}
             >
               <div className={`relative p-2 rounded-2xl transition-all duration-300 ${
                 isActive 
-                  ? 'bg-gradient-to-r from-orange-500 to-pink-500 shadow-lg shadow-orange-500/30 scale-110' 
+                  ? 'bg-gradient-to-r from-amber-500 to-orange-600 shadow-md shadow-orange-500/25 scale-105' 
                   : ''
               }`}>
                 <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
               </div>
               <span className={`text-[10px] font-bold transition-all duration-300 ${
-                isActive ? 'text-orange-600' : ''
+                isActive ? 'text-orange-600 font-extrabold' : ''
               }`}>
                 {item.label}
               </span>

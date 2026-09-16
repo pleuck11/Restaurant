@@ -1,6 +1,6 @@
 import React from 'react';
 
-// --- GlassCard: การ์ดพื้นหลังแบบกระจก ---
+// --- GlassCard: การ์ดพื้นหลังสไตล์คลีนโมเดิร์น ---
 export const GlassCard = ({ 
   children, 
   className = "" 
@@ -8,12 +8,12 @@ export const GlassCard = ({
   children: React.ReactNode, 
   className?: string 
 }) => (
-  <div className={`bg-white/40 backdrop-blur-lg border border-white/50 shadow-xl rounded-2xl ${className}`}>
+  <div className={`bg-white/95 backdrop-blur-md border border-stone-200/80 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] rounded-2xl ${className}`}>
     {children}
   </div>
 );
 
-// --- GlassButton: ปุ่มกดแบบกระจก พร้อมเอฟเฟกต์ Hover ---
+// --- GlassButton: ปุ่มกดสไตล์ร้านอาหารระดับโปรดักชัน ---
 export const GlassButton = ({ 
   children, 
   onClick, 
@@ -34,12 +34,12 @@ export const GlassButton = ({
     onClick={onClick}
     disabled={disabled}
     className={`
-      relative overflow-hidden transition-all duration-300 backdrop-blur-md border shadow-lg
+      relative overflow-hidden transition-all duration-200 border shadow-xs
       ${active 
-        ? 'bg-gradient-to-r from-orange-500/80 to-pink-500/80 text-white border-transparent' 
-        : 'bg-white/30 text-slate-700 border-white/40 hover:bg-white/50'
+        ? 'bg-gradient-to-r from-orange-500 to-amber-600 text-white border-transparent shadow-orange-500/25 shadow-md' 
+        : 'bg-white hover:bg-stone-50 text-stone-700 border-stone-200/80'
       }
-      ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:scale-[1.02] active:scale-95'}
+      ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:scale-[1.01] active:scale-95'}
       rounded-xl font-semibold ${className}
     `}
   >

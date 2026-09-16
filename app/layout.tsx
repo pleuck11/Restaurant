@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { RestaurantProvider } from "@/context/RestaurantContext";
 import { NotificationProvider } from "@/context/NotificationContext";
+import MobileBottomNav from "@/components/MobileBottomNav";
 
 
 const inter = Inter({ subsets: ["latin"] });
@@ -32,21 +33,21 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="th">
-      <body className={`${inter.className} min-h-screen relative overflow-x-hidden selection:bg-pink-500 selection:text-white`}>
-        {/* Liquid Background: พื้นหลังแบบเคลื่อนไหว */}
-        <div className="fixed inset-0 z-0 pointer-events-none">
-          <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500"></div>
-          <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-orange-400 mix-blend-multiply filter blur-[100px] opacity-70 animate-blob"></div>
-          <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-pink-400 mix-blend-multiply filter blur-[100px] opacity-70 animate-blob animation-delay-2000"></div>
-          <div className="absolute -bottom-8 left-[20%] w-[50%] h-[50%] rounded-full bg-purple-400 mix-blend-multiply filter blur-[100px] opacity-70 animate-blob animation-delay-4000"></div>
+      <body className={`${inter.className} min-h-screen relative overflow-x-hidden selection:bg-orange-500 selection:text-white bg-[#FAF7F2] text-stone-800`}>
+        {/* Production Clean Background */}
+        <div className="fixed inset-0 z-0 pointer-events-none bg-[#FAF7F2]">
+          <div className="absolute top-0 inset-x-0 h-96 bg-gradient-to-b from-orange-100/40 via-amber-50/20 to-transparent"></div>
+          <div className="absolute top-[-5%] right-[-5%] w-[40%] h-[40%] rounded-full bg-orange-200/25 filter blur-[120px]"></div>
+          <div className="absolute top-[20%] left-[-5%] w-[35%] h-[35%] rounded-full bg-amber-200/25 filter blur-[120px]"></div>
         </div>
 
         {/* Global Context Provider */}
         <NotificationProvider>
           <RestaurantProvider>
-              <div className="relative z-10">
+              <div className="relative z-10 pb-16 md:pb-0">
                  {children}
               </div>
+              <MobileBottomNav />
           </RestaurantProvider>
         </NotificationProvider>
       </body>

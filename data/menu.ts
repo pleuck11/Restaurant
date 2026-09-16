@@ -1,0 +1,157 @@
+export interface MenuItemData {
+  id: number | string;
+  name: string;
+  nameEn?: string;
+  description: string;
+  category: 'ต้ม/แกง' | 'อาหารจานเดียว' | 'ยำ/ตำ' | 'ย่าง/ทอด' | 'ของหวาน' | 'เครื่องดื่ม';
+  price: number;
+  image: string;
+  spicyLevel?: number; // 0 = ไม่เผ็ด, 1 = เผ็ดน้อย, 2 = เผ็ดปานกลาง, 3 = เผ็ดมาก
+  isPopular?: boolean;
+  isSignature?: boolean;
+}
+
+export const MENU_ITEMS_DATA: MenuItemData[] = [
+  {
+    id: 1,
+    name: 'ต้มยำกุ้งน้ำข้น',
+    nameEn: 'Tom Yum Goong (Creamy)',
+    description: 'ต้มยำกุ้งแม่น้ำตัวโตน้ำข้นสูตรโบราณ รสชาติจัดจ้าน หอมกลิ่นสมุนไพร ข่า ตะไคร้ ใบมะกรูด และพริกเผาแท้',
+    category: 'ต้ม/แกง',
+    price: 250,
+    image: '/images/dishes/tomyum.jpg',
+    spicyLevel: 3,
+    isPopular: true,
+    isSignature: true,
+  },
+  {
+    id: 2,
+    name: 'ผัดไทยกุ้งสด',
+    nameEn: 'Pad Thai with Fresh Prawns',
+    description: 'เส้นจันท์เหนียวนุ่ม ผัดซอสมะขามสูตรลับเฉพาะ กุ้งสดตัวโต เสิร์ฟพร้อมถั่วงอกสด ถั่วบดคั่วเอง และมะนาวสด',
+    category: 'อาหารจานเดียว',
+    price: 120,
+    image: '/images/dishes/padthai.jpg',
+    spicyLevel: 1,
+    isPopular: true,
+    isSignature: true,
+  },
+  {
+    id: 3,
+    name: 'ส้มตำไทยไข่เค็ม',
+    nameEn: 'Som Tum Thai with Salted Egg',
+    description: 'มะละกอกรอบสด ตำคลุกเคล้ากับกุ้งแห้ง ถั่วคั่ว และไข่เค็มไชยา รสชาติเปรี้ยวหวานกลมกล่อมจัดจ้าน',
+    category: 'ยำ/ตำ',
+    price: 90,
+    image: '/images/dishes/somtum.jpg',
+    spicyLevel: 2,
+    isPopular: true,
+  },
+  {
+    id: 4,
+    name: 'ไก่ย่างสมุนไพร',
+    nameEn: 'Thai Herbal Grilled Chicken',
+    description: 'ไก่หมักสมุนไพรไทยสูตรเด็ด ย่างไฟอ่อนจนหนังกรอบเนื้อนุ่มฉ่ำ เสิร์ฟพร้อมน้ำจิ้มแจ่วรสเด็ดและน้ำจิ้มหวาน',
+    category: 'ย่าง/ทอด',
+    price: 180,
+    image: '/images/dishes/gaiyang.jpg',
+    spicyLevel: 1,
+    isPopular: true,
+  },
+  {
+    id: 5,
+    name: 'ข้าวผัดเนื้อปูก้อน',
+    nameEn: 'Jumbo Lump Crab Meat Fried Rice',
+    description: 'ข้าวหอมมะลิผัดกระทะเหล็กไฟแรงเม็ดร่วน หอมกลิ่นคั่วกระทะ ท็อปด้วยกรรเชียงปูม้าชิ้นโตเน้นๆ สดหวาน',
+    category: 'อาหารจานเดียว',
+    price: 180,
+    image: '/images/dishes/khaopadpu.jpg',
+    spicyLevel: 0,
+    isPopular: true,
+  },
+  {
+    id: 6,
+    name: 'ปลากะพงทอดน้ำปลา',
+    nameEn: 'Deep-fried Sea Bass with Fish Sauce',
+    description: 'ปลากะพงสดตัวใหญ่ ทอดจนสีเหลืองทองกรอบนอกนุ่มใน ราดด้วยน้ำปลาเคี่ยวหวานหอม เสิร์ฟพร้อมยำมะม่วงรสจัด',
+    category: 'ย่าง/ทอด',
+    price: 450,
+    image: '/images/dishes/seabass.jpg',
+    spicyLevel: 1,
+    isSignature: true,
+  },
+  {
+    id: 7,
+    name: 'แกงเขียวหวานไก่โรตี',
+    nameEn: 'Green Curry Chicken with Roti',
+    description: 'แกงเขียวหวานกะทิสดเครื่องแกงตำเอง รสเข้มข้นกลมกล่อม ทานคู่กับโรตีกรอบนุ่มร้อนๆ เข้ากันอย่างลงตัว',
+    category: 'ต้ม/แกง',
+    price: 160,
+    image: '/images/dishes/greencurry.jpg',
+    spicyLevel: 2,
+  },
+  {
+    id: 8,
+    name: 'คอหมูย่างน้ำจิ้มแจ่ว',
+    nameEn: 'Grilled Pork Neck with Jaew Sauce',
+    description: 'คอหมูเกรดพรีเมียมหมักซอสข้ามคืน ย่างสุกกำลังดีเนื้อฉ่ำนุ่มละมุนลิ้น จิ้มกับแจ่วมะขามเปียกพริกป่นข้าวคั่ว',
+    category: 'ย่าง/ทอด',
+    price: 150,
+    image: '/images/dishes/mooyang.jpg',
+    spicyLevel: 1,
+    isPopular: true,
+  },
+  {
+    id: 9,
+    name: 'ข้าวเหนียวมะม่วงอกร่อง',
+    nameEn: 'Mango Sticky Rice',
+    description: 'มะม่วงน้ำดอกไม้สุกหวานฉ่ำ เสิร์ฟพร้อมข้าวเหนียวมูนกะทิสดหอมนุ่ม โรยหน้าด้วยถั่วทองกรอบและกะทิอบควันเทียน',
+    category: 'ของหวาน',
+    price: 120,
+    image: '/images/dishes/mangorice.jpg',
+    spicyLevel: 0,
+    isPopular: true,
+    isSignature: true,
+  },
+  {
+    id: 10,
+    name: 'ชาไทยโบราณเย็น',
+    nameEn: 'Traditional Thai Iced Tea',
+    description: 'ชาไทยแท้คั่วพิเศษ ชงสดเข้มข้น หอมละมุนด้วยนมข้นหวานและนมสดแท้ หวานมันกำลังดี',
+    category: 'เครื่องดื่ม',
+    price: 55,
+    image: '/images/dishes/thaitea.jpg',
+    spicyLevel: 0,
+    isPopular: true,
+  },
+  {
+    id: 11,
+    name: 'น้ำแตงโมปั่นสด',
+    nameEn: 'Fresh Watermelon Smoothie',
+    description: 'แตงโมสดคัดเกรด ปั่นเนื้อเนียนละเอียด เย็นชื่นใจ ดับกระหายคลายร้อน ไม่ใส่น้ำตาลสังเคราะห์',
+    category: 'เครื่องดื่ม',
+    price: 65,
+    image: '/images/dishes/watermelon.jpg',
+    spicyLevel: 0,
+  },
+  {
+    id: 12,
+    name: 'น้ำมะนาวโซดาน้ำผึ้ง',
+    nameEn: 'Honey Lime Soda',
+    description: 'น้ำมะนาวแป้นคั้นสดผสมน้ำผึ้งแท้และโซดาซ่าสดชื่น เปรี้ยวหวานซ่า สดชื่นกระปรี้กระเปร่า',
+    category: 'เครื่องดื่ม',
+    price: 60,
+    image: '/images/dishes/limesoda.jpg',
+    spicyLevel: 0,
+  },
+];
+
+export const MENU_CATEGORIES = [
+  'ทั้งหมด',
+  'ต้ม/แกง',
+  'อาหารจานเดียว',
+  'ยำ/ตำ',
+  'ย่าง/ทอด',
+  'ของหวาน',
+  'เครื่องดื่ม',
+] as const;

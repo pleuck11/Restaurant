@@ -63,30 +63,30 @@ export default function ReservationPage() {
       <div className="md:hidden animate-fade-in pb-6">
         {/* Mobile Header */}
         <div className="px-5 pt-4 pb-3">
-          <h2 className="text-2xl font-bold flex items-center gap-2 text-white drop-shadow-md">
-            <Calendar className="text-white" size={24} /> จองโต๊ะ
+          <h2 className="text-2xl font-black flex items-center gap-2 text-stone-900">
+            <Calendar className="text-amber-600" size={24} /> จองโต๊ะ
           </h2>
-          <p className="text-white/60 text-xs mt-1">กรอกข้อมูลเพื่อจองล่วงหน้า</p>
+          <p className="text-stone-500 text-xs mt-1">กรอกข้อมูลเพื่อจองล่วงหน้า</p>
         </div>
 
         {/* Mobile Form */}
         <form onSubmit={handleSubmit} className="px-4">
-          <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/50 shadow-xl overflow-hidden">
+          <div className="bg-white rounded-3xl border border-stone-200/80 shadow-xs overflow-hidden">
             {/* Name */}
             <div className="px-5 pt-5 pb-3">
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">ชื่อผู้จอง</label>
+              <label className="block text-xs font-bold text-stone-600 uppercase tracking-wider mb-2">ชื่อผู้จอง</label>
               <input 
                 required 
                 name="name" 
                 type="text" 
-                className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-transparent outline-none transition-all text-slate-800 placeholder-slate-300" 
+                className="w-full p-3.5 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition-all text-stone-800 placeholder-stone-400 text-sm" 
                 placeholder="คุณลูกค้า" 
               />
             </div>
 
             {/* Phone */}
             <div className="px-5 pb-3">
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">เบอร์โทรศัพท์</label>
+              <label className="block text-xs font-bold text-stone-600 uppercase tracking-wider mb-2">เบอร์โทรศัพท์</label>
               <input 
                 required 
                 name="phone" 
@@ -95,7 +95,7 @@ export default function ReservationPage() {
                 pattern="[0-9]{10}"
                 title="กรุณากรอกเบอร์โทรศัพท์ 10 หลัก"
                 onInput={(e) => { e.currentTarget.value = e.currentTarget.value.replace(/\D/g, '').slice(0, 10); }}
-                className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-transparent outline-none transition-all text-slate-800 placeholder-slate-300" 
+                className="w-full p-3.5 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition-all text-stone-800 placeholder-stone-400 text-sm" 
                 placeholder="08xxxxxxxx" 
               />
             </div>
@@ -103,59 +103,48 @@ export default function ReservationPage() {
             {/* Date & Time - side by side */}
             <div className="px-5 pb-3 grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1">
-                  <Calendar size={12} /> วันที่
+                <label className="block text-xs font-bold text-stone-600 uppercase tracking-wider mb-2 flex items-center gap-1">
+                  <Calendar size={12} className="text-amber-600" /> วันที่
                 </label>
                 <input 
                   required 
                   name="date" 
                   type="date" 
-                  className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-transparent outline-none transition-all text-slate-800 min-h-[52px]" 
+                  className="w-full p-3.5 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition-all text-stone-800 text-sm min-h-[52px]" 
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1">
-                  <Clock size={12} /> เวลา
+                <label className="block text-xs font-bold text-stone-600 uppercase tracking-wider mb-2 flex items-center gap-1">
+                  <Clock size={12} className="text-amber-600" /> เวลา
                 </label>
                 <input 
                   required 
                   name="time" 
                   type="time" 
-                  className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-transparent outline-none transition-all text-slate-800 min-h-[52px]" 
+                  className="w-full p-3.5 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition-all text-stone-800 text-sm min-h-[52px]" 
                 />
               </div>
             </div>
 
-            {/* Guest Counter */}
+            {/* Guests Counter */}
             <div className="px-5 pb-5">
-              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">จำนวนคน</label>
-              <div className="flex items-center gap-3 bg-slate-50 p-2 rounded-xl border border-slate-200">
-                <button 
-                  type="button" 
+              <label className="block text-xs font-bold text-stone-600 uppercase tracking-wider mb-2">จำนวนคน</label>
+              <div className="flex items-center justify-between bg-stone-50 border border-stone-200 rounded-2xl p-2">
+                <button
+                  type="button"
                   onClick={() => adjustGuests(-1)}
-                  className="w-12 h-12 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-slate-600 active:scale-90 active:bg-slate-100 transition-all shadow-sm"
+                  className="w-12 h-12 rounded-xl bg-white border border-stone-200 shadow-xs flex items-center justify-center text-stone-700 active:scale-90 transition cursor-pointer"
                 >
                   <Minus size={20} />
                 </button>
-                
-                <div className="flex-1 flex items-center justify-center relative">
-                  <input 
-                    required 
-                    name="guests" 
-                    type="number" 
-                    min="1" 
-                    value={guestCount}
-                    onChange={handleInputChange}
-                    onBlur={handleBlur}
-                    className="w-20 text-center bg-transparent border-none focus:bg-white/80 rounded-lg px-0 py-1 font-bold text-3xl text-slate-800 outline-none appearance-none [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-all" 
-                  />
-                  <span className="text-sm text-slate-500 font-medium ml-1">ท่าน</span>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-3xl font-extrabold text-stone-900">{guestCount}</span>
+                  <span className="text-xs text-stone-500 font-medium">ท่าน</span>
                 </div>
-                
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => adjustGuests(1)}
-                  className="w-12 h-12 flex items-center justify-center rounded-xl bg-gradient-to-r from-orange-500 to-pink-500 text-white active:scale-90 transition-all shadow-lg shadow-orange-500/30"
+                  className="w-12 h-12 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 shadow-xs flex items-center justify-center text-white active:scale-90 transition cursor-pointer"
                 >
                   <Plus size={20} />
                 </button>
@@ -163,11 +152,10 @@ export default function ReservationPage() {
             </div>
           </div>
 
-          {/* Mobile Fixed Submit Button */}
-          <div className="mt-4 px-1">
-            <button 
+          <div className="mt-4">
+            <button
               type="submit"
-              className="w-full py-4 rounded-2xl font-bold text-lg text-white bg-gradient-to-r from-orange-500 to-pink-500 shadow-xl shadow-orange-500/30 active:scale-[0.98] transition-all"
+              className="w-full py-4 rounded-2xl font-bold text-base text-white bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 shadow-md shadow-orange-500/25 active:scale-[0.98] transition-all cursor-pointer"
             >
               ยืนยันการจอง
             </button>
@@ -177,17 +165,17 @@ export default function ReservationPage() {
 
       {/* === DESKTOP LAYOUT (original) === */}
       <div className="hidden md:block p-4 md:p-8 max-w-lg mx-auto animate-fade-in pt-10 min-h-[calc(100vh-80px)]">
-        <h2 className="text-3xl font-bold mb-6 flex items-center gap-3 text-white drop-shadow-md">
-            <Calendar className="text-white" /> จองโต๊ะ
+        <h2 className="text-3xl font-black mb-6 flex items-center gap-3 text-stone-900">
+            <Calendar className="text-amber-600" /> จองโต๊ะ
         </h2>
-        <GlassCard className="p-6 md:p-8">
+        <div className="p-6 md:p-8 bg-white border border-stone-200/80 shadow-xs rounded-2xl">
             <form onSubmit={handleSubmit} className="space-y-5">
              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">ชื่อผู้จอง</label>
-                <input required name="name" type="text" className="w-full p-4 bg-white/50 border border-white/40 rounded-xl focus:ring-2 focus:ring-orange-400 outline-none backdrop-blur-sm transition-all" placeholder="คุณลูกค้า" />
+                <label className="block text-sm font-semibold text-stone-700 mb-2">ชื่อผู้จอง</label>
+                <input required name="name" type="text" className="w-full p-3.5 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none transition-all text-stone-800 text-sm" placeholder="คุณลูกค้า" />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">เบอร์โทรศัพท์</label>
+              <label className="block text-sm font-semibold text-stone-700 mb-2">เบอร์โทรศัพท์</label>
               <input 
                 required 
                 name="phone" 
@@ -196,46 +184,46 @@ export default function ReservationPage() {
                 pattern="[0-9]{10}"
                 title="กรุณากรอกเบอร์โทรศัพท์ 10 หลัก"
                 onInput={(e) => { e.currentTarget.value = e.currentTarget.value.replace(/\D/g, '').slice(0, 10); }}
-                className="w-full p-4 bg-white/50 border border-white/40 rounded-xl focus:ring-2 focus:ring-orange-400 outline-none backdrop-blur-sm transition-all" 
+                className="w-full p-3.5 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none transition-all text-stone-800 text-sm" 
                 placeholder="08xxxxxxxx" 
               />
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
-                    <Calendar size={16} className="text-slate-500" /> วันที่
+                <label className="block text-sm font-semibold text-stone-700 mb-2 flex items-center gap-2">
+                    <Calendar size={16} className="text-amber-600" /> วันที่
                 </label>
                 <input 
                     required 
                     name="date" 
                     type="date" 
-                    className="w-full p-4 bg-white/50 border border-white/40 rounded-xl focus:ring-2 focus:ring-orange-400 outline-none backdrop-blur-sm transition-all min-h-[56px]" 
+                    className="w-full p-3.5 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none transition-all text-stone-800 text-sm min-h-[52px]" 
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
-                    <Clock size={16} className="text-slate-500" /> เวลา
+                <label className="block text-sm font-semibold text-stone-700 mb-2 flex items-center gap-2">
+                    <Clock size={16} className="text-amber-600" /> เวลา
                 </label>
                 <input 
                     required 
                     name="time" 
                     type="time" 
-                    className="w-full p-4 bg-white/50 border border-white/40 rounded-xl focus:ring-2 focus:ring-orange-400 outline-none backdrop-blur-sm transition-all min-h-[56px]" 
+                    className="w-full p-3.5 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none transition-all text-stone-800 text-sm min-h-[52px]" 
                 />
               </div>
             </div>
             
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">จำนวนคน</label>
-              <div className="flex items-center gap-3 bg-white/30 p-2 rounded-xl border border-white/40 backdrop-blur-sm transition-all hover:bg-white/40 group/counter">
-                <GlassButton 
+              <label className="block text-sm font-semibold text-stone-700 mb-2">จำนวนคน</label>
+              <div className="flex items-center gap-3 bg-stone-50 p-2.5 rounded-xl border border-stone-200 transition-all group/counter">
+                <button 
                   type="button" 
                   onClick={() => adjustGuests(-1)}
-                  className="w-12 h-12 flex items-center justify-center !rounded-lg !bg-white/50 hover:!bg-white/80 !border-0 !shadow-sm text-slate-600 active:scale-90"
+                  className="w-11 h-11 flex items-center justify-center rounded-lg bg-white border border-stone-200 shadow-xs text-stone-600 active:scale-90 hover:bg-stone-100 transition cursor-pointer"
                 >
-                  <Minus size={20} />
-                </GlassButton>
+                  <Minus size={18} />
+                </button>
                 
                 <div className="flex-1 flex items-center justify-center relative">
                     <div className="relative">
@@ -247,29 +235,28 @@ export default function ReservationPage() {
                             value={guestCount}
                             onChange={handleInputChange}
                             onBlur={handleBlur}
-                            className="w-24 text-center bg-transparent border-b-2 border-transparent focus:border-orange-400 focus:bg-white/40 rounded px-0 py-1 font-bold text-3xl text-slate-800 drop-shadow-sm outline-none appearance-none [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-all placeholder-slate-300" 
+                            className="w-24 text-center bg-transparent border-b-2 border-transparent focus:border-amber-500 rounded px-0 py-1 font-black text-3xl text-stone-900 outline-none appearance-none [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-all" 
                         />
-                        <Pencil size={12} className="absolute top-0 right-0 text-slate-400 opacity-0 group-hover/counter:opacity-100 transition-opacity pointer-events-none" />
+                        <Pencil size={12} className="absolute top-0 right-0 text-stone-400 opacity-0 group-hover/counter:opacity-100 transition-opacity pointer-events-none" />
                     </div>
-                    <span className="text-sm text-slate-600 font-medium mt-2 ml-2">ท่าน</span>
+                    <span className="text-sm text-stone-600 font-medium ml-2">ท่าน</span>
                 </div>
-                
-                <GlassButton 
+
+                <button 
                   type="button" 
                   onClick={() => adjustGuests(1)}
-                  active
-                  className="w-12 h-12 flex items-center justify-center !rounded-lg !shadow-md active:scale-90"
+                  className="w-11 h-11 flex items-center justify-center rounded-lg bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-xs active:scale-90 hover:from-amber-600 hover:to-orange-700 transition cursor-pointer"
                 >
-                  <Plus size={20} className="text-white" />
-                </GlassButton>
+                  <Plus size={18} />
+                </button>
               </div>
             </div>
 
             <GlassButton type="submit" active className="w-full py-4 mt-6 text-lg shadow-lg hover:shadow-orange-500/40">
                 ยืนยันการจอง
             </GlassButton>
-            </form>
-        </GlassCard>
+          </form>
+        </div>
       </div>
     </>
   );

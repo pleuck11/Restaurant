@@ -6,6 +6,7 @@ import { GlassCard, GlassButton } from '@/components/ui/Glass';
 import { useRestaurant } from '@/context/RestaurantContext';
 import { useNotification } from '@/context/NotificationContext';
 import Navbar from '@/components/Navbar';
+import DishImage from '@/components/DishImage';
 
 export default function OrderingPage() {
   const router = useRouter();
@@ -95,29 +96,29 @@ export default function OrderingPage() {
     <>
       <Navbar />
 
-      {/* =================== MOBILE LAYOUT =================== */}
-      <div className="md:hidden flex flex-col h-[calc(100vh-56px)] animate-fade-in relative">
+      {/* =================== MOBILE & TABLET LAYOUT (<1024px) =================== */}
+      <div className="lg:hidden flex flex-col h-[calc(100vh-56px)] animate-fade-in relative max-w-3xl mx-auto w-full">
         
         {/* Mobile Header */}
         <div className="px-4 pt-3 pb-2 shrink-0">
           <div className="flex justify-between items-center mb-2">
             <div>
-              <h2 className="text-xl font-bold text-white drop-shadow-md">เมนูอาหาร</h2>
-              <span className="text-white/60 text-xs">{selectedTable.name}</span>
+              <h2 className="text-xl font-bold text-stone-900">เมนูอาหาร</h2>
+              <span className="text-stone-500 text-xs font-medium">สั่งให้: {selectedTable.name}</span>
             </div>
           </div>
           {/* Mobile Search Bar */}
           <div className="relative mt-1">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50" />
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
             <input
               type="text"
               placeholder="ค้นหาเมนู..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-9 py-2.5 bg-white/15 backdrop-blur-sm border border-white/20 rounded-2xl text-white placeholder-white/40 outline-none focus:bg-white/25 transition-all text-sm"
+              className="w-full pl-9 pr-9 py-2.5 bg-white border border-stone-200 rounded-2xl text-stone-800 placeholder-stone-400 outline-none focus:border-amber-500 shadow-xs transition-all text-sm"
             />
             {searchTerm && (
-              <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 active:scale-90">
+              <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 active:scale-90">
                 <XCircle size={18} />
               </button>
             )}
@@ -133,8 +134,8 @@ export default function OrderingPage() {
                 onClick={() => setSelectedCategory(cat)}
                 className={`px-4 py-2 rounded-full whitespace-nowrap text-xs font-bold transition-all duration-200 active:scale-95 ${
                   selectedCategory === cat 
-                  ? 'bg-gradient-to-r from-orange-500 to-pink-500 text-white shadow-lg' 
-                  : 'bg-white/30 text-white/80 backdrop-blur-sm border border-white/20'
+                  ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-xs' 
+                  : 'bg-white text-stone-600 border border-stone-200/80 shadow-xs'
                 }`}
               >
                 {cat}
@@ -143,39 +144,55 @@ export default function OrderingPage() {
           </div>
         </div>
 
-        {/* Mobile Menu Items - Scrollable */}
+        {/* Mobile/Tablet Menu Items - Scrollable Grid */}
         <div className="flex-1 overflow-y-auto px-4 pb-28">
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {filteredMenu.map(item => {
               const inCart = cart.find(c => c.id === item.id);
               return (
-                <div key={item.id} className="bg-white/70 backdrop-blur-lg border border-white/40 rounded-2xl p-3.5 flex gap-3.5 shadow-sm active:bg-white/90 transition-all">
-                  <div className="text-4xl bg-gradient-to-br from-white/60 to-white/20 w-16 h-16 flex items-center justify-center rounded-xl shadow-inner border border-white/50 shrink-0">
-                    {item.image}
+                <div key={item.id} className="bg-white border border-stone-200/80 rounded-2xl p-3 flex gap-3 shadow-xs active:bg-stone-50 transition-all">
+                  <div className="w-20 h-20 rounded-xl overflow-hidden shadow-inner border border-stone-200 shrink-0 relative bg-stone-100">
+                    <DishImage src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                    {item.spicyLevel && item.spicyLevel > 0 ? (
+                      <span className="absolute bottom-1 right-1 bg-black/60 backdrop-blur-sm text-[9px] px-1 py-0.2 rounded text-white">
+                        {'🌶️'.repeat(Math.min(item.spicyLevel, 3))}
+                      </span>
+                    ) : null}
                   </div>
                   <div className="flex-1 flex flex-col justify-between py-0.5 min-w-0">
                     <div>
-                      <h3 className="font-bold text-slate-800 text-sm leading-tight truncate">{item.name}</h3>
-                      <span className="text-[10px] text-slate-400">{item.category}</span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <h3 className="font-bold text-stone-900 text-sm leading-tight">{item.name}</h3>
+                        {item.isPopular && (
+                          <span className="bg-amber-100 text-amber-800 text-[9px] font-bold px-1.5 py-0.5 rounded border border-amber-200">
+                            แนะนำ
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[10px] text-stone-400 block mt-0.5">{item.category}</span>
+                      {item.description && (
+                        <p className="text-[11px] text-stone-500 line-clamp-1 mt-0.5">{item.description}</p>
+                      )}
                     </div>
-                    <div className="flex justify-between items-end">
-                      <span className="font-bold text-pink-600 text-base">฿{item.price}</span>
+                    <div className="flex justify-between items-end mt-1">
+                      <span className="font-extrabold text-amber-700 text-base">฿{item.price}</span>
                       {inCart ? (
-                        <div className="flex items-center gap-2 bg-white/80 rounded-lg p-0.5 shadow-inner border border-slate-100">
-                          <button onClick={() => updateQty(item.id, -1)} className="w-7 h-7 flex items-center justify-center rounded-md bg-white text-slate-500 active:scale-90 shadow-sm">
+                        <div className="flex items-center gap-2 bg-stone-100 rounded-lg p-0.5 shadow-inner border border-stone-200">
+                          <button onClick={() => updateQty(item.id, -1)} className="w-7 h-7 flex items-center justify-center rounded-md bg-white text-stone-600 active:scale-90 shadow-xs">
                             <Minus size={14} />
                           </button>
-                          <span className="w-5 text-center font-bold text-sm text-slate-700">{inCart.qty}</span>
-                          <button onClick={() => updateQty(item.id, 1)} className="w-7 h-7 flex items-center justify-center rounded-md bg-gradient-to-r from-orange-400 to-pink-500 text-white active:scale-90 shadow-sm">
+                          <span className="w-5 text-center font-bold text-sm text-stone-800">{inCart.qty}</span>
+                          <button onClick={() => updateQty(item.id, 1)} className="w-7 h-7 flex items-center justify-center rounded-md bg-gradient-to-r from-amber-500 to-orange-600 text-white active:scale-90 shadow-xs">
                             <Plus size={14} />
                           </button>
                         </div>
                       ) : (
                         <button 
                           onClick={() => { addToCart(item); }}
-                          className="bg-gradient-to-r from-orange-400 to-pink-500 text-white p-2 rounded-xl shadow-md active:scale-90 transition-all"
+                          className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white px-3 py-1.5 rounded-xl shadow-xs active:scale-90 transition-all flex items-center gap-1 text-xs font-bold"
                         >
-                          <Plus size={18} />
+                          <Plus size={14} />
+                          <span>สั่ง</span>
                         </button>
                       )}
                     </div>
@@ -186,38 +203,40 @@ export default function OrderingPage() {
           </div>
         </div>
 
-        {/* Mobile FAB / Cart Summary Bar */}
+        {/* Mobile/Tablet FAB / Cart Summary Bar */}
         {(cartCount > 0 || activeOrders.length > 0) && !isMobileSheetOpen && (
           <div className="fixed bottom-0 left-0 right-0 z-40 px-4 pb-safe animate-slide-up" style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 8px)' }}>
-            <button
-              onClick={() => setIsMobileSheetOpen(true)}
-              className="w-full bg-gradient-to-r from-orange-500 to-pink-500 text-white rounded-2xl p-4 shadow-xl shadow-orange-500/30 flex items-center justify-between active:scale-[0.98] transition-all"
-            >
-              <div className="flex items-center gap-3">
-                <div className="bg-white/20 rounded-xl p-2">
-                  <ShoppingBag size={20} />
+            <div className="max-w-md mx-auto">
+              <button
+                onClick={() => setIsMobileSheetOpen(true)}
+                className="w-full bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-2xl p-4 shadow-lg shadow-orange-500/25 flex items-center justify-between active:scale-[0.98] transition-all"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="bg-white/20 rounded-xl p-2">
+                    <ShoppingBag size={20} />
+                  </div>
+                  <div className="text-left">
+                    <p className="font-bold text-sm">{cartCount} รายการ</p>
+                    <p className="text-white/80 text-xs">แตะเพื่อดูตะกร้า</p>
+                  </div>
                 </div>
-                <div className="text-left">
-                  <p className="font-bold text-sm">{cartCount} รายการ</p>
-                  <p className="text-white/80 text-xs">แตะเพื่อดูตะกร้า</p>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-lg">฿{cartTotal}</span>
+                  <ChevronUp size={18} className="text-white/70" />
                 </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-lg">฿{cartTotal}</span>
-                <ChevronUp size={18} className="text-white/70" />
-              </div>
-            </button>
+              </button>
+            </div>
           </div>
         )}
 
-        {/* Mobile Bottom Sheet */}
+        {/* Mobile/Tablet Bottom Sheet */}
         {isMobileSheetOpen && (
-          <div className="fixed inset-0 z-50">
+          <div className="fixed inset-0 z-50 flex flex-col justify-end">
             {/* Overlay */}
             <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsMobileSheetOpen(false)} />
             
             {/* Sheet */}
-            <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-2xl animate-slide-up max-h-[85vh] flex flex-col">
+            <div className="relative w-full sm:max-w-lg sm:mx-auto bg-white rounded-t-3xl shadow-2xl animate-slide-up max-h-[85vh] flex flex-col">
               {/* Handle */}
               <div className="flex justify-center pt-3 pb-1">
                 <div className="w-10 h-1 bg-slate-200 rounded-full" />
@@ -360,23 +379,23 @@ export default function OrderingPage() {
         )}
       </div>
 
-      {/* =================== DESKTOP LAYOUT (original) =================== */}
-      <div className="hidden md:flex h-[calc(100vh-80px)] flex-row gap-4 p-2 md:p-4 animate-fade-in relative">
+      {/* =================== DESKTOP LAYOUT (>=1024px) =================== */}
+      <div className="hidden lg:flex h-[calc(100vh-80px)] flex-row gap-5 p-4 lg:p-6 animate-fade-in relative max-w-[1680px] mx-auto w-full">
         
         {/* --- MENU --- */}
-        <div className="flex-1 overflow-y-auto pb-0 pr-2 scrollbar-thin scrollbar-thumb-white/50 scrollbar-track-transparent">
+        <div className="flex-1 overflow-y-auto pb-0 pr-2 scrollbar-thin scrollbar-thumb-stone-200 scrollbar-track-transparent">
           <div className="flex flex-row justify-between items-center mb-6 gap-4">
             <div>
-              <h2 className="text-3xl font-bold text-white drop-shadow-md">เมนูอาหาร</h2>
-              <div className="inline-flex items-center gap-2 bg-black/20 backdrop-blur-sm px-3 py-1 rounded-full mt-2">
-                <span className="text-sm text-white font-medium">สั่งให้: {selectedTable.name}</span>
+              <h2 className="text-3xl font-black text-stone-900">เมนูอาหาร</h2>
+              <div className="inline-flex items-center gap-1.5 bg-amber-50 border border-amber-200/80 px-3 py-1 rounded-full mt-2">
+                <span className="text-sm text-amber-900 font-medium">สั่งให้: <strong className="font-bold">{selectedTable.name}</strong></span>
               </div>
             </div>
-            <GlassCard className="p-2 flex items-center !rounded-full !bg-white/30 px-4 w-auto">
-               <Search size={20} className="text-white/70 mr-2" />
-               <input type="text" placeholder="ค้นหาเมนู..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="bg-transparent border-none outline-none text-white placeholder-white/50 w-full" />
-               {searchTerm && <button onClick={() => setSearchTerm('')} className="text-white/50 hover:text-white ml-2"><XCircle size={18} /></button>}
-            </GlassCard>
+            <div className="p-2 flex items-center rounded-full bg-white border border-stone-200 px-4 w-auto shadow-xs">
+               <Search size={20} className="text-stone-400 mr-2" />
+               <input type="text" placeholder="ค้นหาเมนู..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="bg-transparent border-none outline-none text-stone-900 placeholder-stone-400 w-full text-sm" />
+               {searchTerm && <button onClick={() => setSearchTerm('')} className="text-stone-400 hover:text-stone-600 ml-2"><XCircle size={18} /></button>}
+            </div>
           </div>
 
           <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide mb-2">
@@ -384,10 +403,10 @@ export default function OrderingPage() {
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-5 py-2.5 rounded-full whitespace-nowrap text-sm font-bold transition-all duration-300 shadow-sm backdrop-blur-sm ${
+                className={`px-5 py-2.5 rounded-full whitespace-nowrap text-sm font-bold transition-all duration-300 shadow-xs ${
                   selectedCategory === cat 
-                  ? 'bg-gradient-to-r from-orange-500 to-pink-500 text-white shadow-lg scale-105' 
-                  : 'bg-white/40 text-slate-700 hover:bg-white/60'
+                  ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-orange-500/20 shadow-md' 
+                  : 'bg-white text-stone-700 hover:bg-stone-50 border border-stone-200/80'
                 }`}
               >
                 {cat}
@@ -395,55 +414,110 @@ export default function OrderingPage() {
             ))}
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredMenu.map(item => (
-              <GlassCard key={item.id} className="p-4 flex gap-4 hover:scale-[1.02] transition-transform duration-300 !bg-white/60">
-                <div className="text-5xl bg-gradient-to-br from-white/40 to-white/10 w-24 h-24 flex items-center justify-center rounded-2xl shadow-inner border border-white/40">
-                  {item.image}
-                </div>
-                <div className="flex-1 flex flex-col justify-between py-1">
-                  <div>
-                    <h3 className="font-bold text-slate-800 text-lg leading-tight mb-1">{item.name}</h3>
-                    <span className="text-xs text-slate-500 bg-white/50 px-2 py-1 rounded-md">{item.category}</span>
+          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+            {filteredMenu.map(item => {
+              const inCart = cart.find(c => c.id === item.id);
+              return (
+                <div 
+                  key={item.id} 
+                  className="p-3.5 flex flex-col hover:scale-[1.01] transition-all duration-300 bg-white rounded-2xl border border-stone-200/80 shadow-xs hover:shadow-md group"
+                >
+                  {/* Dish Image on Top */}
+                  <div className="w-full h-36 md:h-40 rounded-xl overflow-hidden shadow-inner border border-stone-200 shrink-0 relative bg-stone-100 mb-3">
+                    <DishImage src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    {item.isPopular && (
+                      <span className="absolute top-2 left-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[11px] font-bold px-2.5 py-0.5 rounded-full shadow-xs">
+                        แนะนำ
+                      </span>
+                    )}
+                    {item.spicyLevel && item.spicyLevel > 0 ? (
+                      <span className="absolute bottom-2 right-2 bg-black/65 backdrop-blur-sm text-[11px] px-2 py-0.5 rounded-md text-white">
+                        {'🌶️'.repeat(Math.min(item.spicyLevel, 3))}
+                      </span>
+                    ) : null}
                   </div>
-                  <div className="flex justify-between items-end mt-2">
-                    <span className="font-bold text-pink-600 text-lg">฿{item.price}</span>
-                    <button 
-                      onClick={() => { addToCart(item); setSidebarTab('cart'); }}
-                      className="bg-gradient-to-r from-orange-400 to-pink-500 text-white p-2 rounded-xl shadow-lg hover:shadow-orange-500/30 active:scale-95 transition-all"
-                    >
-                      <Plus size={20} />
-                    </button>
+
+                  {/* Dish Info */}
+                  <div className="flex-1 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-start justify-between gap-1">
+                        <h3 className="font-bold text-stone-900 text-base leading-tight line-clamp-1">{item.name}</h3>
+                      </div>
+                      {item.nameEn && (
+                        <span className="text-[11px] text-stone-400 block leading-tight truncate mt-0.5">{item.nameEn}</span>
+                      )}
+                      <span className="inline-block text-[10px] text-stone-500 bg-stone-100 px-2 py-0.5 rounded-md mt-1.5 border border-stone-200 font-medium">
+                        {item.category}
+                      </span>
+                      {item.description && (
+                        <p className="text-xs text-stone-500 line-clamp-2 mt-1.5 leading-snug">
+                          {item.description}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Price and Action Button */}
+                    <div className="flex justify-between items-center mt-3 pt-2.5 border-t border-stone-100">
+                      <span className="font-extrabold text-amber-700 text-lg tracking-tight">฿{item.price}</span>
+                      
+                      {inCart ? (
+                        <div className="flex items-center gap-1.5 bg-stone-100 rounded-xl p-1 shadow-inner border border-stone-200">
+                          <button 
+                            onClick={() => updateQty(item.id, -1)} 
+                            className="w-7 h-7 flex items-center justify-center rounded-lg bg-white text-stone-600 active:scale-90 hover:bg-stone-50 shadow-xs transition cursor-pointer"
+                            title="ลดจำนวน"
+                          >
+                            <Minus size={14} />
+                          </button>
+                          <span className="w-6 text-center font-bold text-sm text-stone-800">{inCart.qty}</span>
+                          <button 
+                            onClick={() => updateQty(item.id, 1)} 
+                            className="w-7 h-7 flex items-center justify-center rounded-lg bg-gradient-to-r from-amber-500 to-orange-600 text-white active:scale-90 shadow-xs hover:opacity-90 transition cursor-pointer"
+                            title="เพิ่มจำนวน"
+                          >
+                            <Plus size={14} />
+                          </button>
+                        </div>
+                      ) : (
+                        <button 
+                          onClick={() => { addToCart(item); setSidebarTab('cart'); }}
+                          className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white px-3.5 py-1.5 rounded-xl shadow-xs active:scale-95 transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer"
+                        >
+                          <Plus size={15} />
+                          <span>สั่ง</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </GlassCard>
-            ))}
+              );
+            })}
           </div>
         </div>
 
         {/* --- DESKTOP SIDEBAR --- */}
-        <GlassCard className={`relative w-[400px] !bg-white/40 backdrop-blur-xl border-l border-white/50 flex flex-col transition-all duration-500 z-40 rounded-2xl`}>
-          <div className="flex border-b border-white/30 p-2 gap-2">
+        <div className="relative w-80 xl:w-96 shrink-0 bg-white border border-stone-200/80 shadow-xs flex flex-col transition-all duration-500 z-40 rounded-2xl">
+          <div className="flex border-b border-stone-100 p-2 gap-2">
             <button 
                 onClick={() => setSidebarTab('cart')}
-                className={`flex-1 py-3 text-sm font-bold flex items-center justify-center gap-2 rounded-xl transition-all ${sidebarTab === 'cart' ? 'bg-white shadow-sm text-orange-600' : 'text-slate-500 hover:bg-white/30'}`}
+                className={`flex-1 py-2.5 text-sm font-bold flex items-center justify-center gap-2 rounded-xl transition-all ${sidebarTab === 'cart' ? 'bg-amber-50 text-amber-900 border border-amber-200/60 shadow-xs' : 'text-stone-500 hover:bg-stone-50'}`}
             >
                 <ShoppingBag size={18} /> ตะกร้า ({cartCount})
             </button>
             <button 
                 onClick={() => setSidebarTab('bill')}
-                className={`flex-1 py-3 text-sm font-bold flex items-center justify-center gap-2 rounded-xl transition-all ${sidebarTab === 'bill' ? 'bg-white shadow-sm text-pink-600' : 'text-slate-500 hover:bg-white/30'}`}
+                className={`flex-1 py-2.5 text-sm font-bold flex items-center justify-center gap-2 rounded-xl transition-all ${sidebarTab === 'bill' ? 'bg-stone-100 text-stone-900 border border-stone-200/60 shadow-xs' : 'text-stone-500 hover:bg-stone-50'}`}
             >
                 <Receipt size={18} /> บิล (฿{billTotal})
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-white/50">
+          <div className="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-stone-200">
             {sidebarTab === 'cart' ? (
                 <>
                     {cart.length === 0 ? (
-                    <div className="text-center text-slate-400 py-10 flex flex-col items-center">
-                        <ShoppingBag size={40} className="opacity-50 mb-2" />
+                    <div className="text-center text-stone-400 py-10 flex flex-col items-center">
+                        <ShoppingBag size={40} className="opacity-40 mb-2" />
                         <p className="font-medium">ตะกร้าว่างเปล่า</p>
                     </div>
                     ) : (
@@ -515,14 +589,14 @@ export default function OrderingPage() {
             )}
           </div>
 
-          <div className="p-4 border-t border-white/30 bg-white/40 backdrop-blur-md">
+          <div className="p-4 border-t border-stone-100 bg-stone-50/60 rounded-b-2xl">
             {sidebarTab === 'cart' ? (
                 <>
-                    <div className="flex justify-between items-center mb-4 text-lg font-bold text-slate-800">
-                        <span>ยอดรวม ({cartCount} จาน)</span>
-                        <span className="text-pink-600 text-xl">฿{cartTotal}</span>
+                    <div className="flex justify-between items-center mb-4 text-base font-bold text-stone-900">
+                        <span className="text-stone-600">ยอดรวม ({cartCount} จาน)</span>
+                        <span className="text-amber-700 text-xl font-black">฿{cartTotal}</span>
                     </div>
-                    <GlassButton onClick={handlePlaceOrderClick} disabled={cart.length === 0} active={cart.length > 0} className="w-full py-3.5 text-lg shadow-xl">
+                    <GlassButton onClick={handlePlaceOrderClick} disabled={cart.length === 0} active={cart.length > 0} className="w-full py-3.5 text-base font-bold shadow-xs">
                         ยืนยันสั่งอาหาร
                     </GlassButton>
                 </>
@@ -530,17 +604,17 @@ export default function OrderingPage() {
                 <button 
                     onClick={handleCheckBill}
                     disabled={billTotal === 0 || hasBillRequested || hasUnservedOrders}
-                    className={`w-full py-3.5 rounded-xl font-bold shadow-xl transition-all flex items-center justify-center gap-2 ${
+                    className={`w-full py-3.5 rounded-xl font-bold shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer ${
                         hasBillRequested || hasUnservedOrders || billTotal === 0
-                        ? 'bg-gray-400 text-white cursor-not-allowed' 
-                        : 'bg-slate-800 text-white hover:bg-slate-900'
+                        ? 'bg-stone-300 text-stone-500 cursor-not-allowed' 
+                        : 'bg-stone-900 text-white hover:bg-stone-800'
                     }`}
                 >
                     {hasBillRequested ? 'รอการตรวจสอบ...' : hasUnservedOrders ? 'รออาหารเสิร์ฟครบ' : <><Receipt size={20} /> เช็คบิล / ชำระเงิน</>}
                 </button>
             )}
           </div>
-        </GlassCard>
+        </div>
       </div>
 
       {/* =================== SHARED MODALS =================== */}
